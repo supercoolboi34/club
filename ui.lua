@@ -38,9 +38,9 @@ local keyNames = {
     [Enum.KeyCode.RightShift] = "RSHIFT",
     [Enum.KeyCode.LeftAlt] = "LALT",
     [Enum.KeyCode.RightAlt] = "RALT",
-    [Enum.MouseButton.Button1] = "MOUSE1",
-    [Enum.MouseButton.Button2] = "MOUSE2",
-    [Enum.MouseButton.Button3] = "MOUSE3"
+    [Enum.UserInputType.MouseButton1] = "MOUSE1",
+    [Enum.UserInputType.MouseButton2] = "MOUSE2",
+    [Enum.UserInputType.MouseButton3] = "MOUSE3"
 }
 
 local function create(class, props)
@@ -1078,7 +1078,7 @@ function club:window(cfg)
                     Position = UDim2.new(0.55, 4, 0.5, -10),
                     Size = UDim2.new(0.45, -12, 0, 20),
                     Font = Enum.Font.GothamBold,
-                    Text = keyNames[key] or key.Name,
+                    Text = keyNames[key] or (typeof(key) == "EnumItem" and key.Name or "NONE"),
                     TextColor3 = theme.text,
                     TextSize = 9,
                     AutoButtonColor = false
@@ -1090,7 +1090,8 @@ function club:window(cfg)
                 function keybind:set(newKey)
                     key = newKey
                     config[flag] = key
-                    keyBtn.Text = keyNames[key] or key.Name
+                    keyBtn.Text = keyNames[key] or (typeof(key) == "EnumItem" and key.Name or "NONE")
+                    window.keybinds[flag].key = key
                     callback(key)
                 end
 
@@ -1104,15 +1105,22 @@ function club:window(cfg)
                     tween(keyBtn, {BackgroundColor3 = currentAccent}, 0.15)
                 end)
 
-                local conn
-                conn = uis.InputBegan:Connect(function(input)
+                local inputConn
+                inputConn = uis.InputBegan:Connect(function(input)
                     if binding then
+                        local newKey = nil
                         if input.UserInputType == Enum.UserInputType.Keyboard then
-                            keybind:set(input.KeyCode)
-                            binding = false
-                            tween(keyBtn, {BackgroundColor3 = theme.border}, 0.15)
-                        elseif input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.MouseButton3 then
-                            keybind:set(input.UserInputType)
+                            newKey = input.KeyCode
+                        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            newKey = Enum.UserInputType.MouseButton1
+                        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                            newKey = Enum.UserInputType.MouseButton2
+                        elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+                            newKey = Enum.UserInputType.MouseButton3
+                        end
+                        
+                        if newKey then
+                            keybind:set(newKey)
                             binding = false
                             tween(keyBtn, {BackgroundColor3 = theme.border}, 0.15)
                         end
@@ -1373,7 +1381,15 @@ function club:window(cfg)
 
     uis.InputBegan:Connect(function(input)
         for flag, data in pairs(window.keybinds) do
-            if input.KeyCode == data.key or input.UserInputType == data.key then
+            local isMatch = false
+            if typeof(data.key) == "EnumItem" then
+                if data.key.EnumType == Enum.KeyCode then
+                    isMatch = input.KeyCode == data.key
+                elseif data.key.EnumType == Enum.UserInputType then
+                    isMatch = input.UserInputType == data.key
+                end
+            end
+            if isMatch then
                 data.callback(true)
             end
         end
