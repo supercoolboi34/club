@@ -138,6 +138,7 @@ function club:window(cfg)
     })
     corner(main, 6)
     stroke(main, theme.border, 1)
+    main.ClipsDescendants = true
     glow(main, currentAccent, 80, 0.5)
 
     local holder = create("Frame", {
@@ -249,17 +250,65 @@ function club:window(cfg)
         end
     end)
 
-    uis.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            if activeDropdown then
-                activeDropdown()
-                activeDropdown = nil
-            end
-            if activeColorPicker then
-                activeColorPicker()
-                activeColorPicker = nil
-            end
+    local resizeHandle = create("TextButton", {
+        Parent = main,
+        BackgroundColor3 = theme.border,
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, -12, 1, -12),
+        Size = UDim2.new(0, 12, 0, 12),
+        Text = "",
+        AutoButtonColor = false,
+        ZIndex = 10
+    })
+    corner(resizeHandle, 3)
+
+    local resizing, resizeStart, startSize
+    resizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            resizing = true
+            resizeStart = input.Position
+            startSize = main.Size
         end
+    end)
+
+    uis.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            resizing = false
+        end
+    end)
+
+    uis.InputChanged:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and resizing then
+            local delta = input.Position - resizeStart
+            local newWidth = math.max(600, startSize.X.Offset + delta.X)
+            local newHeight = math.max(400, startSize.Y.Offset + delta.Y)
+            main.Size = UDim2.new(0, newWidth, 0, newHeight)
+        end
+    end)
+
+    resizeHandle.MouseEnter:Connect(function() tween(resizeHandle, {BackgroundColor3 = currentAccent}, 0.15) end)
+    resizeHandle.MouseLeave:Connect(function() tween(resizeHandle, {BackgroundColor3 = theme.border}, 0.15) end)
+
+    local clickDetector = create("TextButton", {
+        Parent = gui,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 1, 0),
+        Text = "",
+        Visible = false,
+        ZIndex = 999
+    })
+
+    clickDetector.MouseButton1Click:Connect(function()
+        if activeDropdown then
+            activeDropdown()
+            activeDropdown = nil
+        end
+        if activeColorPicker then
+            activeColorPicker()
+            activeColorPicker = nil
+        end
+        clickDetector.Visible = false
     end)
 
     local window = {
@@ -403,7 +452,8 @@ function club:window(cfg)
             Text = "",
             TextColor3 = theme.subtext,
             TextSize = 11,
-            AutoButtonColor = false
+            AutoButtonColor = false,
+            ClipsDescendants = false
         })
         corner(btn, 4)
         stroke(btn, theme.border, 1)
@@ -485,6 +535,16 @@ function club:window(cfg)
         table.insert(tab.accentObjects, indicator)
 
         local function selectTab()
+            if activeDropdown then
+                activeDropdown()
+                activeDropdown = nil
+            end
+            if activeColorPicker then
+                activeColorPicker()
+                activeColorPicker = nil
+            end
+            clickDetector.Visible = false
+            
             for _, t in pairs(window.tabs) do
                 t.container.Visible = false
                 for _, child in pairs(tabHolder:GetChildren()) do
@@ -1076,14 +1136,14 @@ function club:window(cfg)
                         opened = false
                         tween(dFrame, {Size = UDim2.new(1, 0, 0, 34)}, 0.2)
                         tween(arrow, {Rotation = 0}, 0.2)
-                        activeDropdown = nil
+                        if activeDropdown == close then activeDropdown = nil end
                     end
                 end
 
                 for _, option in ipairs(options) do
                     local optBtn = create("TextButton", {
                         Parent = optHolder,
-                        BackgroundColor3 = theme.border,
+                        BackgroundColor3 = theme.raised,
                         BorderSizePixel = 0,
                         Size = UDim2.new(1, 0, 0, 26),
                         Font = Enum.Font.Gotham,
@@ -1102,11 +1162,11 @@ function club:window(cfg)
                     end)
 
                     optBtn.MouseEnter:Connect(function()
-                        tween(optBtn, {BackgroundColor3 = currentAccent}, 0.15)
+                        tween(optBtn, {BackgroundColor3 = theme.overlay}, 0.15)
                         tween(optBtn:FindFirstChildOfClass("UIStroke"), {Color = currentAccent}, 0.15)
                     end)
                     optBtn.MouseLeave:Connect(function()
-                        tween(optBtn, {BackgroundColor3 = theme.border}, 0.15)
+                        tween(optBtn, {BackgroundColor3 = theme.raised}, 0.15)
                         tween(optBtn:FindFirstChildOfClass("UIStroke"), {Color = theme.border}, 0.15)
                     end)
                 end
@@ -1115,11 +1175,16 @@ function club:window(cfg)
                     if activeDropdown and activeDropdown ~= close then
                         activeDropdown()
                     end
+                    if activeColorPicker then
+                        activeColorPicker()
+                        activeColorPicker = nil
+                    end
                     opened = not opened
                     local newSize = opened and (34 + 12 + (#options * 29)) or 34
                     tween(dFrame, {Size = UDim2.new(1, 0, 0, newSize)}, 0.2)
                     tween(arrow, {Rotation = opened and 180 or 0}, 0.2)
                     activeDropdown = opened and close or nil
+                    clickDetector.Visible = opened
                 end)
 
                 btn.MouseEnter:Connect(function() tween(dFrame, {BackgroundColor3 = theme.overlay}, 0.15) end)
@@ -1222,7 +1287,7 @@ function club:window(cfg)
                         opened = false
                         tween(mFrame, {Size = UDim2.new(1, 0, 0, 34)}, 0.2)
                         tween(arrow, {Rotation = 0}, 0.2)
-                        activeDropdown = nil
+                        if activeDropdown == close then activeDropdown = nil end
                     end
                 end
 
@@ -1231,7 +1296,7 @@ function club:window(cfg)
 
                     local optBtn = create("TextButton", {
                         Parent = optHolder,
-                        BackgroundColor3 = isSelected and currentAccent or theme.border,
+                        BackgroundColor3 = isSelected and currentAccent or theme.raised,
                         BorderSizePixel = 0,
                         Size = UDim2.new(1, 0, 0, 26),
                         Font = Enum.Font.Gotham,
@@ -1247,7 +1312,7 @@ function club:window(cfg)
                     optBtn.MouseButton1Click:Connect(function()
                         isSelected = not isSelected
                         selected[option] = isSelected or nil
-                        tween(optBtn, {BackgroundColor3 = isSelected and currentAccent or theme.border}, 0.2)
+                        tween(optBtn, {BackgroundColor3 = isSelected and currentAccent or theme.raised}, 0.2)
                         tween(optBtn:FindFirstChildOfClass("UIStroke"), {Color = isSelected and currentAccent or theme.border}, 0.2)
                         label.Text = mName .. ": " .. getSelectedText()
                         config[flag] = selected
@@ -1257,11 +1322,13 @@ function club:window(cfg)
                     optBtn.MouseEnter:Connect(function()
                         if not isSelected then
                             tween(optBtn, {BackgroundColor3 = theme.overlay}, 0.15)
+                            tween(optBtn:FindFirstChildOfClass("UIStroke"), {Color = currentAccent}, 0.15)
                         end
                     end)
                     optBtn.MouseLeave:Connect(function()
                         if not isSelected then
-                            tween(optBtn, {BackgroundColor3 = theme.border}, 0.15)
+                            tween(optBtn, {BackgroundColor3 = theme.raised}, 0.15)
+                            tween(optBtn:FindFirstChildOfClass("UIStroke"), {Color = theme.border}, 0.15)
                         end
                     end)
                 end
@@ -1270,11 +1337,16 @@ function club:window(cfg)
                     if activeDropdown and activeDropdown ~= close then
                         activeDropdown()
                     end
+                    if activeColorPicker then
+                        activeColorPicker()
+                        activeColorPicker = nil
+                    end
                     opened = not opened
                     local newSize = opened and (34 + 12 + (#options * 29)) or 34
                     tween(mFrame, {Size = UDim2.new(1, 0, 0, newSize)}, 0.2)
                     tween(arrow, {Rotation = opened and 180 or 0}, 0.2)
                     activeDropdown = opened and close or nil
+                    clickDetector.Visible = opened
                 end)
 
                 btn.MouseEnter:Connect(function() tween(mFrame, {BackgroundColor3 = theme.overlay}, 0.15) end)
@@ -1547,7 +1619,7 @@ function club:window(cfg)
                     if opened then
                         opened = false
                         tween(cFrame, {Size = UDim2.new(1, 0, 0, 34)}, 0.2)
-                        activeColorPicker = nil
+                        if activeColorPicker == close then activeColorPicker = nil end
                     end
                 end
 
@@ -1562,12 +1634,14 @@ function club:window(cfg)
                     opened = not opened
                     tween(cFrame, {Size = UDim2.new(1, 0, 0, opened and 178 or 34)}, 0.2)
                     activeColorPicker = opened and close or nil
+                    clickDetector.Visible = opened
                 end)
 
                 local svDragging = false
                 satVal.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
                         svDragging = true
+                        clickDetector.Visible = false
                         local function update()
                             local mouse = uis:GetMouseLocation()
                             sat = math.clamp((mouse.X - satVal.AbsolutePosition.X) / satVal.AbsoluteSize.X, 0, 1)
@@ -1585,6 +1659,7 @@ function club:window(cfg)
                                 svDragging = false
                                 conn:Disconnect()
                                 conn2:Disconnect()
+                                if opened then clickDetector.Visible = true end
                             end
                         end)
                     end
@@ -1594,6 +1669,7 @@ function club:window(cfg)
                 hueSlider.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
                         hueDragging = true
+                        clickDetector.Visible = false
                         local function update()
                             local mouse = uis:GetMouseLocation()
                             hue = math.clamp((mouse.Y - hueSlider.AbsolutePosition.Y) / hueSlider.AbsoluteSize.Y, 0, 1)
@@ -1610,6 +1686,7 @@ function club:window(cfg)
                                 hueDragging = false
                                 conn:Disconnect()
                                 conn2:Disconnect()
+                                if opened then clickDetector.Visible = true end
                             end
                         end)
                     end
