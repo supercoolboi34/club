@@ -40,7 +40,9 @@ local keyNames = {
     [Enum.KeyCode.RightAlt] = "RALT",
     [Enum.UserInputType.MouseButton1] = "MOUSE1",
     [Enum.UserInputType.MouseButton2] = "MOUSE2",
-    [Enum.UserInputType.MouseButton3] = "MOUSE3"
+    [Enum.UserInputType.MouseButton3] = "MOUSE3",
+    ["MB4"] = "MOUSE4",
+    ["MB5"] = "MOUSE5"
 }
 
 local function create(class, props)
@@ -1078,7 +1080,7 @@ function club:window(cfg)
                     Position = UDim2.new(0.55, 4, 0.5, -10),
                     Size = UDim2.new(0.45, -12, 0, 20),
                     Font = Enum.Font.GothamBold,
-                    Text = keyNames[key] or (typeof(key) == "EnumItem" and key.Name or "NONE"),
+                    Text = (typeof(key) == "string" and keyNames[key]) or keyNames[key] or (typeof(key) == "EnumItem" and key.Name or "NONE"),
                     TextColor3 = theme.text,
                     TextSize = 9,
                     AutoButtonColor = false
@@ -1090,7 +1092,7 @@ function club:window(cfg)
                 function keybind:set(newKey)
                     key = newKey
                     config[flag] = key
-                    keyBtn.Text = keyNames[key] or (typeof(key) == "EnumItem" and key.Name or "NONE")
+                    keyBtn.Text = (typeof(key) == "string" and keyNames[key]) or keyNames[key] or (typeof(key) == "EnumItem" and key.Name or "NONE")
                     window.keybinds[flag].key = key
                     callback(key)
                 end
@@ -1117,6 +1119,11 @@ function club:window(cfg)
                             newKey = Enum.UserInputType.MouseButton2
                         elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
                             newKey = Enum.UserInputType.MouseButton3
+                        elseif input.UserInputType.Name:match("MouseButton") then
+                            local btnNum = tonumber(input.UserInputType.Name:match("%d+"))
+                            if btnNum == 4 then newKey = "MB4"
+                            elseif btnNum == 5 then newKey = "MB5"
+                            end
                         end
                         
                         if newKey then
@@ -1379,6 +1386,25 @@ function club:window(cfg)
         return tab
     end
 
+    local function getMouseButton(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            return Enum.UserInputType.MouseButton1
+        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+            return Enum.UserInputType.MouseButton2
+        elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+            return Enum.UserInputType.MouseButton3
+        end
+        
+        if input.UserInputType.Name:match("MouseButton") then
+            local btnNum = tonumber(input.UserInputType.Name:match("%d+"))
+            if btnNum == 4 then return "MB4"
+            elseif btnNum == 5 then return "MB5"
+            end
+        end
+        
+        return nil
+    end
+
     uis.InputBegan:Connect(function(input)
         for flag, data in pairs(window.keybinds) do
             local isMatch = false
@@ -1388,6 +1414,9 @@ function club:window(cfg)
                 elseif data.key.EnumType == Enum.UserInputType then
                     isMatch = input.UserInputType == data.key
                 end
+            elseif typeof(data.key) == "string" then
+                local mouseBtn = getMouseButton(input)
+                isMatch = mouseBtn == data.key
             end
             if isMatch then
                 data.callback(true)
