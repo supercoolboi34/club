@@ -2,8 +2,8 @@ local club = {}
 
 local uis = game:GetService("UserInputService")
 local ts = game:GetService("TweenService")
-local rs = game:GetService("RunService")
 local http = game:GetService("HttpService")
+local players = game:GetService("Players")
 
 local kill = "club_ui"
 if _G[kill] then
@@ -16,28 +16,28 @@ local mobile = uis.TouchEnabled and not uis.KeyboardEnabled
 local executor = (identifyexecutor and identifyexecutor()) or "unknown"
 
 local theme = {
-    bg = Color3.fromRGB(12, 12, 15),
-    surface = Color3.fromRGB(18, 18, 22),
-    raised = Color3.fromRGB(24, 24, 28),
-    overlay = Color3.fromRGB(30, 30, 35),
+    bg = Color3.fromRGB(10, 10, 12),
+    surface = Color3.fromRGB(16, 16, 19),
+    raised = Color3.fromRGB(22, 22, 26),
+    overlay = Color3.fromRGB(28, 28, 32),
     accent = Color3.fromRGB(120, 85, 255),
-    text = Color3.fromRGB(240, 240, 245),
-    subtext = Color3.fromRGB(150, 150, 160),
-    dimtext = Color3.fromRGB(110, 110, 120),
+    text = Color3.fromRGB(245, 245, 250),
+    subtext = Color3.fromRGB(155, 155, 165),
+    dimtext = Color3.fromRGB(100, 100, 110),
     border = Color3.fromRGB(35, 35, 40),
-    success = Color3.fromRGB(80, 190, 120),
-    warning = Color3.fromRGB(245, 190, 80),
-    error = Color3.fromRGB(245, 90, 90),
-    glow = Color3.fromRGB(120, 85, 255)
+    success = Color3.fromRGB(75, 200, 130),
+    error = Color3.fromRGB(235, 85, 85)
 }
 
 local icons = {
     combat = "rbxassetid://7733955740",
     visuals = "rbxassetid://7733920644",
-    misc = "rbxassetid://7733919826",
-    settings = "rbxassetid://7733960981",
+    misc = "rbxassetid://7733674079",
+    settings = "rbxassetid://7734021200",
     save = "rbxassetid://7734053495",
-    load = "rbxassetid://7734042071"
+    load = "rbxassetid://7734042071",
+    hide = "rbxassetid://7733674079",
+    check = "rbxassetid://7733715400"
 }
 
 local keyNames = {
@@ -75,24 +75,6 @@ local function stroke(parent, color, thickness)
     })
 end
 
-local function glow(parent, color, size, trans)
-    local glowFrame = create("ImageLabel", {
-        Name = "glow",
-        Parent = parent,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(1, size or 30, 1, size or 30),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Image = "rbxassetid://5554236805",
-        ImageColor3 = color or theme.glow,
-        ImageTransparency = trans or 0.3,
-        ZIndex = 0,
-        ScaleType = Enum.ScaleType.Slice,
-        SliceCenter = Rect.new(23, 23, 277, 277)
-    })
-    return glowFrame
-end
-
 function club:window(cfg)
     cfg = cfg or {}
     local name = cfg.name or "club"
@@ -101,8 +83,7 @@ function club:window(cfg)
     local configFile = cfg.configFile or "club.json"
     local keybinds = {}
     local currentAccent = theme.accent
-    local activeDropdown = nil
-    local activeColorPicker = nil
+    local visible = true
 
     local gui = create("ScreenGui", {
         Name = http:GenerateGUID(false),
@@ -111,6 +92,42 @@ function club:window(cfg)
         IgnoreGuiInset = true
     })
     _G[kill] = gui
+
+    local cursor = create("ImageLabel", {
+        Name = "cursor",
+        Parent = gui,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 20, 0, 20),
+        Image = "rbxassetid://7733674319",
+        ImageColor3 = currentAccent,
+        ZIndex = 9999,
+        Visible = false
+    })
+
+    local tooltip = create("Frame", {
+        Name = "tooltip",
+        Parent = gui,
+        BackgroundColor3 = theme.surface,
+        BorderSizePixel = 0,
+        Size = UDim2.new(0, 0, 0, 28),
+        AutomaticSize = Enum.AutomaticSize.X,
+        Visible = false,
+        ZIndex = 9998
+    })
+    corner(tooltip, 4)
+    stroke(tooltip, theme.border, 1.5)
+
+    local tooltipText = create("TextLabel", {
+        Parent = tooltip,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 1, 0),
+        Font = Enum.Font.GothamMedium,
+        Text = "",
+        TextColor3 = theme.text,
+        TextSize = 11,
+        TextXAlignment = Enum.TextXAlignment.Center
+    })
+    create("UIPadding", {Parent = tooltipText, PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12)})
 
     local notifs = create("Frame", {
         Name = "notifs",
@@ -134,12 +151,11 @@ function club:window(cfg)
         BackgroundColor3 = theme.bg,
         BorderSizePixel = 0,
         Position = UDim2.new(0.5, -size[1]/2, 0.5, -size[2]/2),
-        Size = UDim2.new(0, size[1], 0, size[2])
+        Size = UDim2.new(0, size[1], 0, size[2]),
+        ClipsDescendants = true
     })
     corner(main, 6)
-    stroke(main, theme.border, 1)
-    main.ClipsDescendants = true
-    glow(main, currentAccent, 80, 0.5)
+    stroke(main, theme.border, 1.5)
 
     local holder = create("Frame", {
         Parent = main,
@@ -151,10 +167,10 @@ function club:window(cfg)
         Parent = holder,
         BackgroundColor3 = theme.surface,
         BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 40)
+        Size = UDim2.new(1, 0, 0, 45)
     })
     corner(topbar, 6)
-    stroke(topbar, theme.border, 1)
+    stroke(topbar, theme.border, 1.5)
 
     local accentLine = create("Frame", {
         Parent = topbar,
@@ -167,65 +183,67 @@ function club:window(cfg)
     local titleText = create("TextLabel", {
         Parent = topbar,
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 14, 0, 0),
-        Size = UDim2.new(0, 200, 1, 0),
+        Position = UDim2.new(0, 16, 0, 0),
+        Size = UDim2.new(0, 150, 1, 0),
         Font = Enum.Font.GothamBold,
         Text = name,
         TextColor3 = theme.text,
-        TextSize = 14,
+        TextSize = 15,
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    local watermark = create("TextLabel", {
+    local hideBtn = create("TextButton", {
         Parent = topbar,
+        BackgroundColor3 = theme.raised,
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, -40, 0.5, -15),
+        Size = UDim2.new(0, 30, 0, 30),
+        Text = "",
+        AutoButtonColor = false
+    })
+    corner(hideBtn, 4)
+    stroke(hideBtn, theme.border, 1.5)
+
+    create("ImageLabel", {
+        Parent = hideBtn,
         BackgroundTransparency = 1,
-        Position = UDim2.new(1, -14, 0, 0),
-        Size = UDim2.new(0, 200, 1, 0),
-        Font = Enum.Font.GothamMedium,
-        Text = executor .. " | " .. os.date("%H:%M"),
-        TextColor3 = theme.subtext,
-        TextSize = 11,
-        TextXAlignment = Enum.TextXAlignment.Right
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(0, 16, 0, 16),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Image = icons.hide,
+        ImageColor3 = theme.text
     })
 
-    spawn(function()
-        while gui.Parent do
-            watermark.Text = executor .. " | " .. os.date("%H:%M")
-            task.wait(1)
-        end
+    hideBtn.MouseButton1Click:Connect(function()
+        visible = not visible
+        tween(main, {Size = visible and UDim2.new(0, size[1], 0, size[2]) or UDim2.new(0, 0, 0, 0)}, 0.3, Enum.EasingStyle.Back)
     end)
 
-    local sidebar = create("Frame", {
+    hideBtn.MouseEnter:Connect(function() tween(hideBtn, {BackgroundColor3 = theme.overlay}, 0.15) end)
+    hideBtn.MouseLeave:Connect(function() tween(hideBtn, {BackgroundColor3 = theme.raised}, 0.15) end)
+
+    local selectionBar = create("Frame", {
         Parent = holder,
         BackgroundColor3 = theme.surface,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 0, 0, 40),
-        Size = UDim2.new(0, 140, 1, -40)
+        Position = UDim2.new(0, 0, 0, 45),
+        Size = UDim2.new(1, 0, 0, 60)
     })
-    stroke(sidebar, theme.border, 1)
+    stroke(selectionBar, theme.border, 1.5)
 
-    local tabHolder = create("Frame", {
-        Parent = sidebar,
+    local selectionHolder = create("Frame", {
+        Parent = selectionBar,
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 1, 0)
+        Position = UDim2.new(0, 10, 0, 8),
+        Size = UDim2.new(1, -20, 1, -16)
     })
-    create("UIListLayout", {
-        Parent = tabHolder,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 4)
-    })
-    create("UIPadding", {
-        Parent = tabHolder,
-        PaddingTop = UDim.new(0, 8),
-        PaddingLeft = UDim.new(0, 8),
-        PaddingRight = UDim.new(0, 8)
-    })
+    create("UIListLayout", {Parent = selectionHolder, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8)})
 
     local container = create("Frame", {
         Parent = holder,
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 140, 0, 40),
-        Size = UDim2.new(1, -140, 1, -40)
+        Position = UDim2.new(0, 0, 0, 105),
+        Size = UDim2.new(1, 0, 1, -105)
     })
 
     local dragging, dragStart, startPos
@@ -248,68 +266,14 @@ function club:window(cfg)
             local delta = input.Position - dragStart
             main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
-    end)
-
-    local resizeHandle = create("TextButton", {
-        Parent = main,
-        BackgroundColor3 = theme.border,
-        BorderSizePixel = 0,
-        Position = UDim2.new(1, -12, 1, -12),
-        Size = UDim2.new(0, 12, 0, 12),
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = 10
-    })
-    corner(resizeHandle, 3)
-
-    local resizing, resizeStart, startSize
-    resizeHandle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            resizing = true
-            resizeStart = input.Position
-            startSize = main.Size
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePos = uis:GetMouseLocation()
+            cursor.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y - 36)
         end
     end)
 
-    uis.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-            resizing = false
-        end
-    end)
-
-    uis.InputChanged:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and resizing then
-            local delta = input.Position - resizeStart
-            local newWidth = math.max(600, startSize.X.Offset + delta.X)
-            local newHeight = math.max(400, startSize.Y.Offset + delta.Y)
-            main.Size = UDim2.new(0, newWidth, 0, newHeight)
-        end
-    end)
-
-    resizeHandle.MouseEnter:Connect(function() tween(resizeHandle, {BackgroundColor3 = currentAccent}, 0.15) end)
-    resizeHandle.MouseLeave:Connect(function() tween(resizeHandle, {BackgroundColor3 = theme.border}, 0.15) end)
-
-    local clickDetector = create("TextButton", {
-        Parent = gui,
-        BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 1, 0),
-        Text = "",
-        Visible = false,
-        ZIndex = 999
-    })
-
-    clickDetector.MouseButton1Click:Connect(function()
-        if activeDropdown then
-            activeDropdown()
-            activeDropdown = nil
-        end
-        if activeColorPicker then
-            activeColorPicker()
-            activeColorPicker = nil
-        end
-        clickDetector.Visible = false
-    end)
+    main.MouseEnter:Connect(function() cursor.Visible = true end)
+    main.MouseLeave:Connect(function() cursor.Visible = false tooltip.Visible = false end)
 
     local window = {
         tabs = {},
@@ -317,14 +281,17 @@ function club:window(cfg)
         config = config,
         executor = executor,
         accent = currentAccent,
-        keybinds = keybinds
+        keybinds = keybinds,
+        cursor = cursor,
+        tooltip = tooltip,
+        tooltipText = tooltipText
     }
 
     function window:setAccent(color)
         currentAccent = color
         window.accent = color
         accentLine.BackgroundColor3 = color
-        main:FindFirstChild("glow").ImageColor3 = color
+        cursor.ImageColor3 = color
         for _, tab in pairs(window.tabs) do
             if tab.updateAccent then tab:updateAccent(color) end
         end
@@ -340,7 +307,6 @@ function club:window(cfg)
         local colors = {
             info = {color = currentAccent, icon = "rbxassetid://7733992901"},
             success = {color = theme.success, icon = "rbxassetid://7733993369"},
-            warning = {color = theme.warning, icon = "rbxassetid://7733993445"},
             error = {color = theme.error, icon = "rbxassetid://7733993390"}
         }
         local typeData = colors[nType] or colors.info
@@ -354,9 +320,8 @@ function club:window(cfg)
         })
         corner(notif, 6)
         stroke(notif, theme.border, 1.5)
-        glow(notif, typeData.color, 40, 0.4)
 
-        local accent = create("Frame", {
+        create("Frame", {
             Parent = notif,
             BackgroundColor3 = typeData.color,
             BorderSizePixel = 0,
@@ -440,53 +405,38 @@ function club:window(cfg)
         end
     end
 
-    function window:tab(tabName, icon)
+    function window:tab(tabName, icon, desc)
         local tab = {name = tabName, sections = {}, container = nil, accentObjects = {}}
 
         local btn = create("TextButton", {
-            Parent = tabHolder,
+            Parent = selectionHolder,
             BackgroundColor3 = theme.raised,
             BorderSizePixel = 0,
-            Size = UDim2.new(1, 0, 0, 36),
-            Font = Enum.Font.GothamSemibold,
+            Size = UDim2.new(0, 44, 1, 0),
             Text = "",
-            TextColor3 = theme.subtext,
-            TextSize = 11,
-            AutoButtonColor = false,
-            ClipsDescendants = false
+            AutoButtonColor = false
         })
-        corner(btn, 4)
-        stroke(btn, theme.border, 1)
+        corner(btn, 6)
+        stroke(btn, theme.border, 1.5)
 
         if icon then
             create("ImageLabel", {
                 Parent = btn,
                 BackgroundTransparency = 1,
-                Position = UDim2.new(0, 10, 0.5, -10),
-                Size = UDim2.new(0, 20, 0, 20),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                Size = UDim2.new(0, 24, 0, 24),
+                AnchorPoint = Vector2.new(0.5, 0.5),
                 Image = icon,
                 ImageColor3 = theme.subtext
             })
-            create("TextLabel", {
-                Parent = btn,
-                BackgroundTransparency = 1,
-                Position = UDim2.new(0, 36, 0, 0),
-                Size = UDim2.new(1, -36, 1, 0),
-                Font = Enum.Font.GothamSemibold,
-                Text = tabName,
-                TextColor3 = theme.subtext,
-                TextSize = 11,
-                TextXAlignment = Enum.TextXAlignment.Left
-            })
-        else
-            btn.Text = tabName
         end
 
         local indicator = create("Frame", {
             Parent = btn,
             BackgroundColor3 = currentAccent,
             BorderSizePixel = 0,
-            Size = UDim2.new(0, 0, 1, 0),
+            Position = UDim2.new(0, 0, 1, -3),
+            Size = UDim2.new(0, 0, 0, 3),
             Visible = false
         })
 
@@ -514,8 +464,8 @@ function club:window(cfg)
         local leftCol = create("Frame", {
             Parent = columns,
             BackgroundTransparency = 1,
-            Position = UDim2.new(0, 8, 0, 8),
-            Size = UDim2.new(0.5, -12, 1, 0),
+            Position = UDim2.new(0, 10, 0, 10),
+            Size = UDim2.new(0.5, -15, 1, 0),
             AutomaticSize = Enum.AutomaticSize.Y
         })
         create("UIListLayout", {Parent = leftCol, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10)})
@@ -523,8 +473,8 @@ function club:window(cfg)
         local rightCol = create("Frame", {
             Parent = columns,
             BackgroundTransparency = 1,
-            Position = UDim2.new(0.5, 4, 0, 8),
-            Size = UDim2.new(0.5, -12, 1, 0),
+            Position = UDim2.new(0.5, 5, 0, 10),
+            Size = UDim2.new(0.5, -15, 1, 0),
             AutomaticSize = Enum.AutomaticSize.Y
         })
         create("UIListLayout", {Parent = rightCol, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10)})
@@ -532,49 +482,34 @@ function club:window(cfg)
         tab.container = content
         tab.leftCol = leftCol
         tab.rightCol = rightCol
+        tab.btn = btn
         table.insert(tab.accentObjects, indicator)
 
         local function selectTab()
-            if activeDropdown then
-                activeDropdown()
-                activeDropdown = nil
-            end
-            if activeColorPicker then
-                activeColorPicker()
-                activeColorPicker = nil
-            end
-            clickDetector.Visible = false
-            
             for _, t in pairs(window.tabs) do
                 t.container.Visible = false
-                for _, child in pairs(tabHolder:GetChildren()) do
-                    if child:IsA("TextButton") then
-                        tween(child, {BackgroundColor3 = theme.raised}, 0.15)
-                        local img = child:FindFirstChildOfClass("ImageLabel")
-                        local txt = child:FindFirstChildOfClass("TextLabel")
-                        if img then tween(img, {ImageColor3 = theme.subtext}, 0.15) end
-                        if txt then tween(txt, {TextColor3 = theme.subtext}, 0.15) elseif child.Text ~= "" then tween(child, {TextColor3 = theme.subtext}, 0.15) end
-                        local ind = child:FindFirstChild("Frame")
-                        if ind then
-                            ind.Visible = false
-                            tween(ind, {Size = UDim2.new(0, 0, 1, 0)}, 0.2)
-                        end
-                        local strk = child:FindFirstChildOfClass("UIStroke")
-                        if strk then tween(strk, {Color = theme.border}, 0.15) end
-                    end
+                local b = t.btn
+                tween(b, {BackgroundColor3 = theme.raised}, 0.15)
+                local img = b:FindFirstChildOfClass("ImageLabel")
+                if img then tween(img, {ImageColor3 = theme.subtext}, 0.15) end
+                local strk = b:FindFirstChildOfClass("UIStroke")
+                if strk then tween(strk, {Color = theme.border}, 0.15) end
+                local ind = b:FindFirstChild("Frame")
+                if ind then
+                    ind.Visible = false
+                    tween(ind, {Size = UDim2.new(0, 0, 0, 3)}, 0.2)
                 end
             end
             content.Visible = true
             tween(btn, {BackgroundColor3 = theme.overlay}, 0.15)
             local img = btn:FindFirstChildOfClass("ImageLabel")
-            local txt = btn:FindFirstChildOfClass("TextLabel")
             if img then tween(img, {ImageColor3 = currentAccent}, 0.15) end
-            if txt then tween(txt, {TextColor3 = theme.text}, 0.15) elseif btn.Text ~= "" then tween(btn, {TextColor3 = theme.text}, 0.15) end
             local strk = btn:FindFirstChildOfClass("UIStroke")
             if strk then tween(strk, {Color = currentAccent}, 0.15) end
             indicator.Visible = true
-            tween(indicator, {Size = UDim2.new(0, 2, 1, 0)}, 0.2, Enum.EasingStyle.Quad)
+            tween(indicator, {Size = UDim2.new(1, 0, 0, 3)}, 0.2, Enum.EasingStyle.Quad)
             window.currentTab = tab
+            window.tooltip.Visible = false
         end
 
         btn.MouseButton1Click:Connect(selectTab)
@@ -583,11 +518,17 @@ function club:window(cfg)
             if content.Visible == false then
                 tween(btn, {BackgroundColor3 = theme.overlay}, 0.15)
             end
+            if desc then
+                window.tooltipText.Text = desc
+                window.tooltip.Visible = true
+                window.tooltip.Position = UDim2.new(0, btn.AbsolutePosition.X + btn.AbsoluteSize.X/2 - window.tooltip.AbsoluteSize.X/2, 0, btn.AbsolutePosition.Y - 36)
+            end
         end)
         btn.MouseLeave:Connect(function()
             if content.Visible == false then
                 tween(btn, {BackgroundColor3 = theme.raised}, 0.15)
             end
+            window.tooltip.Visible = false
         end)
 
         if not window.currentTab then selectTab() end
@@ -621,14 +562,14 @@ function club:window(cfg)
                 Size = UDim2.new(1, 0, 0, 0),
                 AutomaticSize = Enum.AutomaticSize.Y
             })
-            corner(frame, 5)
+            corner(frame, 6)
             stroke(frame, theme.border, 1.5)
 
             create("TextLabel", {
                 Parent = frame,
                 BackgroundTransparency = 1,
-                Position = UDim2.new(0, 12, 0, 8),
-                Size = UDim2.new(1, -24, 0, 18),
+                Position = UDim2.new(0, 14, 0, 10),
+                Size = UDim2.new(1, -28, 0, 18),
                 Font = Enum.Font.GothamBold,
                 Text = sName,
                 TextColor3 = theme.text,
@@ -640,19 +581,19 @@ function club:window(cfg)
                 Parent = frame,
                 BackgroundColor3 = theme.border,
                 BorderSizePixel = 0,
-                Position = UDim2.new(0, 10, 0, 30),
-                Size = UDim2.new(1, -20, 0, 1)
+                Position = UDim2.new(0, 12, 0, 33),
+                Size = UDim2.new(1, -24, 0, 1)
             })
 
             local sContent = create("Frame", {
                 Parent = frame,
                 BackgroundTransparency = 1,
-                Position = UDim2.new(0, 0, 0, 35),
+                Position = UDim2.new(0, 0, 0, 38),
                 Size = UDim2.new(1, 0, 0, 0),
                 AutomaticSize = Enum.AutomaticSize.Y
             })
             create("UIListLayout", {Parent = sContent, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6)})
-            create("UIPadding", {Parent = sContent, PaddingTop = UDim.new(0, 0), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10)})
+            create("UIPadding", {Parent = sContent, PaddingTop = UDim.new(0, 0), PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12), PaddingBottom = UDim.new(0, 12)})
 
             function section:updateAccent(color)
                 for _, obj in pairs(section.accentObjects) do
@@ -685,16 +626,16 @@ function club:window(cfg)
                     Parent = sContent,
                     BackgroundColor3 = theme.raised,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(1, 0, 0, 34)
+                    Size = UDim2.new(1, 0, 0, 36)
                 })
-                corner(tFrame, 4)
+                corner(tFrame, 5)
                 stroke(tFrame, theme.border, 1)
 
                 create("TextLabel", {
                     Parent = tFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 0),
-                    Size = UDim2.new(1, -50, 1, 0),
+                    Position = UDim2.new(0, 12, 0, 0),
+                    Size = UDim2.new(1, -56, 1, 0),
                     Font = Enum.Font.GothamMedium,
                     Text = tName,
                     TextColor3 = theme.text,
@@ -706,30 +647,21 @@ function club:window(cfg)
                     Parent = tFrame,
                     BackgroundColor3 = toggled and currentAccent or theme.border,
                     BorderSizePixel = 0,
-                    Position = UDim2.new(1, -28, 0.5, -9),
-                    Size = UDim2.new(0, 18, 0, 18)
+                    Position = UDim2.new(1, -32, 0.5, -10),
+                    Size = UDim2.new(0, 20, 0, 20)
                 })
-                corner(checkbox, 3)
+                corner(checkbox, 4)
                 stroke(checkbox, toggled and currentAccent or theme.border, 1.5)
 
-                local checkmark = create("ImageLabel", {
+                create("ImageLabel", {
                     Parent = checkbox,
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0.5, 0, 0.5, 0),
-                    Size = UDim2.new(0, 12, 0, 12),
+                    Size = UDim2.new(0, 14, 0, 14),
                     AnchorPoint = Vector2.new(0.5, 0.5),
-                    Image = "rbxassetid://7733715400",
+                    Image = icons.check,
                     ImageColor3 = theme.text,
                     ImageTransparency = toggled and 0 or 1
-                })
-
-                local gradient = create("UIGradient", {
-                    Parent = checkbox,
-                    Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-                        ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 200))
-                    }),
-                    Rotation = 90
                 })
 
                 local btn = create("TextButton", {Parent = tFrame, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), Text = "", ZIndex = 2})
@@ -742,7 +674,7 @@ function club:window(cfg)
                     config[flag] = value
                     tween(checkbox, {BackgroundColor3 = toggled and currentAccent or theme.border}, 0.2)
                     tween(checkbox:FindFirstChildOfClass("UIStroke"), {Color = toggled and currentAccent or theme.border}, 0.2)
-                    tween(checkmark, {ImageTransparency = toggled and 0 or 1}, 0.2)
+                    tween(checkbox:FindFirstChildOfClass("ImageLabel"), {ImageTransparency = toggled and 0 or 1}, 0.2)
                     callback(toggled)
                 end
 
@@ -784,16 +716,16 @@ function club:window(cfg)
                     Parent = sContent,
                     BackgroundColor3 = theme.raised,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(1, 0, 0, 44)
+                    Size = UDim2.new(1, 0, 0, 48)
                 })
-                corner(sFrame, 4)
+                corner(sFrame, 5)
                 stroke(sFrame, theme.border, 1)
 
                 create("TextLabel", {
                     Parent = sFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 6),
-                    Size = UDim2.new(1, -70, 0, 14),
+                    Position = UDim2.new(0, 12, 0, 8),
+                    Size = UDim2.new(1, -80, 0, 14),
                     Font = Enum.Font.GothamMedium,
                     Text = sName,
                     TextColor3 = theme.text,
@@ -804,8 +736,8 @@ function club:window(cfg)
                 local valueLabel = create("TextLabel", {
                     Parent = sFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(1, -60, 0, 6),
-                    Size = UDim2.new(0, 50, 0, 14),
+                    Position = UDim2.new(1, -68, 0, 8),
+                    Size = UDim2.new(0, 56, 0, 14),
                     Font = Enum.Font.GothamBold,
                     Text = tostring(value) .. suffix,
                     TextColor3 = currentAccent,
@@ -817,8 +749,8 @@ function club:window(cfg)
                     Parent = sFrame,
                     BackgroundColor3 = theme.border,
                     BorderSizePixel = 0,
-                    Position = UDim2.new(0, 10, 1, -14),
-                    Size = UDim2.new(1, -20, 0, 4)
+                    Position = UDim2.new(0, 12, 1, -16),
+                    Size = UDim2.new(1, -24, 0, 4)
                 })
                 corner(track, 2)
 
@@ -830,24 +762,15 @@ function club:window(cfg)
                 })
                 corner(fill, 2)
 
-                local gradient = create("UIGradient", {
-                    Parent = fill,
-                    Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-                        ColorSequenceKeypoint.new(1, currentAccent)
-                    }),
-                    Rotation = 0
-                })
-
                 local knob = create("Frame", {
                     Parent = track,
                     BackgroundColor3 = theme.text,
                     BorderSizePixel = 0,
-                    Position = UDim2.new((value - min) / (max - min), -5, 0.5, -5),
-                    Size = UDim2.new(0, 10, 0, 10),
+                    Position = UDim2.new((value - min) / (max - min), -6, 0.5, -6),
+                    Size = UDim2.new(0, 12, 0, 12),
                     ZIndex = 2
                 })
-                corner(knob, 5)
+                corner(knob, 6)
                 stroke(knob, currentAccent, 2)
 
                 local btn = create("TextButton", {Parent = sFrame, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), Text = "", ZIndex = 3})
@@ -862,7 +785,7 @@ function club:window(cfg)
                     config[flag] = value
                     local percent = (value - min) / (max - min)
                     tween(fill, {Size = UDim2.new(percent, 0, 1, 0)}, 0.1)
-                    tween(knob, {Position = UDim2.new(percent, -5, 0.5, -5)}, 0.1)
+                    tween(knob, {Position = UDim2.new(percent, -6, 0.5, -6)}, 0.1)
                     valueLabel.Text = tostring(value) .. suffix
                     callback(value)
                 end
@@ -870,10 +793,6 @@ function club:window(cfg)
                 function slider:updateAccent(color)
                     fill.BackgroundColor3 = color
                     valueLabel.TextColor3 = color
-                    gradient.Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-                        ColorSequenceKeypoint.new(1, color)
-                    })
                     knob:FindFirstChildOfClass("UIStroke").Color = color
                 end
 
@@ -890,12 +809,10 @@ function club:window(cfg)
                             slider:set(min + (max - min) * percent)
                         end
                         update()
-                        local conn
-                        conn = uis.InputChanged:Connect(function(input2)
+                        local conn = uis.InputChanged:Connect(function(input2)
                             if (input2.UserInputType == Enum.UserInputType.MouseMovement or input2.UserInputType == Enum.UserInputType.Touch) and dragging then update() end
                         end)
-                        local conn2
-                        conn2 = uis.InputEnded:Connect(function(input2)
+                        local conn2 = uis.InputEnded:Connect(function(input2)
                             if input2.UserInputType == Enum.UserInputType.MouseButton1 or input2.UserInputType == Enum.UserInputType.Touch then
                                 dragging = false
                                 conn:Disconnect()
@@ -905,8 +822,8 @@ function club:window(cfg)
                     end
                 end)
 
-                btn.MouseEnter:Connect(function() tween(sFrame, {BackgroundColor3 = theme.overlay}, 0.15) tween(knob, {Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new((value - min) / (max - min), -6, 0.5, -6)}, 0.15) end)
-                btn.MouseLeave:Connect(function() tween(sFrame, {BackgroundColor3 = theme.raised}, 0.15) tween(knob, {Size = UDim2.new(0, 10, 0, 10), Position = UDim2.new((value - min) / (max - min), -5, 0.5, -5)}, 0.15) end)
+                btn.MouseEnter:Connect(function() tween(sFrame, {BackgroundColor3 = theme.overlay}, 0.15) end)
+                btn.MouseLeave:Connect(function() tween(sFrame, {BackgroundColor3 = theme.raised}, 0.15) end)
 
                 table.insert(section.elements, slider)
                 callback(value)
@@ -923,30 +840,21 @@ function club:window(cfg)
                     Parent = sContent,
                     BackgroundColor3 = currentAccent,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(1, 0, 0, 32),
+                    Size = UDim2.new(1, 0, 0, 34),
                     Font = Enum.Font.GothamSemibold,
                     Text = icon and "" or bName,
                     TextColor3 = theme.text,
                     TextSize = 11,
                     AutoButtonColor = false
                 })
-                corner(bFrame, 4)
+                corner(bFrame, 5)
                 stroke(bFrame, currentAccent, 1.5)
-
-                local gradient = create("UIGradient", {
-                    Parent = bFrame,
-                    Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-                        ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 220, 220))
-                    }),
-                    Rotation = 90
-                })
 
                 if icon then
                     create("ImageLabel", {
                         Parent = bFrame,
                         BackgroundTransparency = 1,
-                        Position = UDim2.new(0, 8, 0.5, -10),
+                        Position = UDim2.new(0, 10, 0.5, -10),
                         Size = UDim2.new(0, 20, 0, 20),
                         Image = icon,
                         ImageColor3 = theme.text
@@ -954,8 +862,8 @@ function club:window(cfg)
                     create("TextLabel", {
                         Parent = bFrame,
                         BackgroundTransparency = 1,
-                        Position = UDim2.new(0, 32, 0, 0),
-                        Size = UDim2.new(1, -32, 1, 0),
+                        Position = UDim2.new(0, 36, 0, 0),
+                        Size = UDim2.new(1, -36, 1, 0),
                         Font = Enum.Font.GothamSemibold,
                         Text = bName,
                         TextColor3 = theme.text,
@@ -973,7 +881,7 @@ function club:window(cfg)
                 end
 
                 bFrame.MouseButton1Click:Connect(callback)
-                bFrame.MouseEnter:Connect(function() tween(bFrame, {BackgroundColor3 = Color3.fromRGB(currentAccent.R * 255 * 0.85, currentAccent.G * 255 * 0.85, currentAccent.B * 255 * 0.85)}, 0.15) end)
+                bFrame.MouseEnter:Connect(function() tween(bFrame, {BackgroundColor3 = Color3.fromRGB(currentAccent.R * 200, currentAccent.G * 200, currentAccent.B * 200)}, 0.15) end)
                 bFrame.MouseLeave:Connect(function() tween(bFrame, {BackgroundColor3 = currentAccent}, 0.15) end)
 
                 table.insert(section.elements, button)
@@ -994,15 +902,15 @@ function club:window(cfg)
                     Parent = sContent,
                     BackgroundColor3 = theme.raised,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(1, 0, 0, 34)
+                    Size = UDim2.new(1, 0, 0, 36)
                 })
-                corner(tFrame, 4)
+                corner(tFrame, 5)
                 stroke(tFrame, theme.border, 1)
 
                 create("TextLabel", {
                     Parent = tFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 0),
+                    Position = UDim2.new(0, 12, 0, 0),
                     Size = UDim2.new(0.4, 0, 1, 0),
                     Font = Enum.Font.GothamMedium,
                     Text = tName,
@@ -1015,8 +923,8 @@ function club:window(cfg)
                     Parent = tFrame,
                     BackgroundColor3 = theme.border,
                     BorderSizePixel = 0,
-                    Position = UDim2.new(0.4, 6, 0.5, -11),
-                    Size = UDim2.new(0.6, -16, 0, 22),
+                    Position = UDim2.new(0.4, 8, 0.5, -12),
+                    Size = UDim2.new(0.6, -20, 0, 24),
                     Font = Enum.Font.Gotham,
                     PlaceholderText = placeholder,
                     PlaceholderColor3 = theme.dimtext,
@@ -1025,9 +933,9 @@ function club:window(cfg)
                     TextSize = 10,
                     ClearTextOnFocus = false
                 })
-                corner(input, 3)
+                corner(input, 4)
                 stroke(input, theme.border, 1)
-                create("UIPadding", {Parent = input, PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8)})
+                create("UIPadding", {Parent = input, PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10)})
 
                 local textbox = {}
 
@@ -1072,18 +980,18 @@ function club:window(cfg)
                     Parent = sContent,
                     BackgroundColor3 = theme.raised,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(1, 0, 0, 34),
+                    Size = UDim2.new(1, 0, 0, 36),
                     ClipsDescendants = true,
                     ZIndex = 1
                 })
-                corner(dFrame, 4)
+                corner(dFrame, 5)
                 stroke(dFrame, theme.border, 1)
 
                 local label = create("TextLabel", {
                     Parent = dFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 0),
-                    Size = UDim2.new(1, -36, 0, 34),
+                    Position = UDim2.new(0, 12, 0, 0),
+                    Size = UDim2.new(1, -40, 0, 36),
                     Font = Enum.Font.GothamMedium,
                     Text = dName .. ": " .. tostring(selected),
                     TextColor3 = theme.text,
@@ -1096,24 +1004,29 @@ function club:window(cfg)
                 local arrow = create("ImageLabel", {
                     Parent = dFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(1, -28, 0, 9),
+                    Position = UDim2.new(1, -30, 0, 10),
                     Size = UDim2.new(0, 16, 0, 16),
                     Image = "rbxassetid://7733674079",
                     ImageColor3 = currentAccent,
                     ZIndex = 2
                 })
 
-                local btn = create("TextButton", {Parent = dFrame, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 34), Text = "", ZIndex = 3})
+                local btn = create("TextButton", {Parent = dFrame, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 36), Text = "", ZIndex = 3})
 
-                local optHolder = create("Frame", {
+                local optHolder = create("ScrollingFrame", {
                     Parent = dFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 0, 0, 34),
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(0, 0, 0, 36),
                     Size = UDim2.new(1, 0, 0, 0),
+                    ScrollBarThickness = 2,
+                    ScrollBarImageColor3 = currentAccent,
+                    CanvasSize = UDim2.new(0, 0, 0, 0),
+                    AutomaticCanvasSize = Enum.AutomaticSize.Y,
                     ZIndex = 2
                 })
-                create("UIListLayout", {Parent = optHolder, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 3)})
-                create("UIPadding", {Parent = optHolder, PaddingTop = UDim.new(0, 6), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), PaddingBottom = UDim.new(0, 6)})
+                create("UIListLayout", {Parent = optHolder, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4)})
+                create("UIPadding", {Parent = optHolder, PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 8)})
 
                 local dropdown = {}
                 table.insert(section.accentObjects, arrow)
@@ -1125,19 +1038,10 @@ function club:window(cfg)
                     callback(option)
                 end
 
-                function dropdown:updateAccent(color) arrow.ImageColor3 = color end
+                function dropdown:updateAccent(color) arrow.ImageColor3 = color optHolder.ScrollBarImageColor3 = color end
 
                 function dropdown:load()
                     if config[flag] ~= nil then dropdown:set(config[flag]) end
-                end
-
-                local function close()
-                    if opened then
-                        opened = false
-                        tween(dFrame, {Size = UDim2.new(1, 0, 0, 34)}, 0.2)
-                        tween(arrow, {Rotation = 0}, 0.2)
-                        if activeDropdown == close then activeDropdown = nil end
-                    end
                 end
 
                 for _, option in ipairs(options) do
@@ -1145,7 +1049,7 @@ function club:window(cfg)
                         Parent = optHolder,
                         BackgroundColor3 = theme.raised,
                         BorderSizePixel = 0,
-                        Size = UDim2.new(1, 0, 0, 26),
+                        Size = UDim2.new(1, 0, 0, 28),
                         Font = Enum.Font.Gotham,
                         Text = tostring(option),
                         TextColor3 = theme.text,
@@ -1153,12 +1057,14 @@ function club:window(cfg)
                         AutoButtonColor = false,
                         ZIndex = 3
                     })
-                    corner(optBtn, 3)
+                    corner(optBtn, 4)
                     stroke(optBtn, theme.border, 1)
 
                     optBtn.MouseButton1Click:Connect(function()
                         dropdown:set(option)
-                        close()
+                        opened = false
+                        tween(dFrame, {Size = UDim2.new(1, 0, 0, 36)}, 0.2)
+                        tween(arrow, {Rotation = 0}, 0.2)
                     end)
 
                     optBtn.MouseEnter:Connect(function()
@@ -1172,19 +1078,11 @@ function club:window(cfg)
                 end
 
                 btn.MouseButton1Click:Connect(function()
-                    if activeDropdown and activeDropdown ~= close then
-                        activeDropdown()
-                    end
-                    if activeColorPicker then
-                        activeColorPicker()
-                        activeColorPicker = nil
-                    end
                     opened = not opened
-                    local newSize = opened and (34 + 12 + (#options * 29)) or 34
+                    local maxHeight = math.min(#options * 32 + 16, 160)
+                    local newSize = opened and (36 + maxHeight) or 36
                     tween(dFrame, {Size = UDim2.new(1, 0, 0, newSize)}, 0.2)
                     tween(arrow, {Rotation = opened and 180 or 0}, 0.2)
-                    activeDropdown = opened and close or nil
-                    clickDetector.Visible = opened
                 end)
 
                 btn.MouseEnter:Connect(function() tween(dFrame, {BackgroundColor3 = theme.overlay}, 0.15) end)
@@ -1211,11 +1109,11 @@ function club:window(cfg)
                     Parent = sContent,
                     BackgroundColor3 = theme.raised,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(1, 0, 0, 34),
+                    Size = UDim2.new(1, 0, 0, 36),
                     ClipsDescendants = true,
                     ZIndex = 1
                 })
-                corner(mFrame, 4)
+                corner(mFrame, 5)
                 stroke(mFrame, theme.border, 1)
 
                 local function getSelectedText()
@@ -1233,8 +1131,8 @@ function club:window(cfg)
                 local label = create("TextLabel", {
                     Parent = mFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 0),
-                    Size = UDim2.new(1, -36, 0, 34),
+                    Position = UDim2.new(0, 12, 0, 0),
+                    Size = UDim2.new(1, -40, 0, 36),
                     Font = Enum.Font.GothamMedium,
                     Text = mName .. ": " .. getSelectedText(),
                     TextColor3 = theme.text,
@@ -1247,24 +1145,29 @@ function club:window(cfg)
                 local arrow = create("ImageLabel", {
                     Parent = mFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(1, -28, 0, 9),
+                    Position = UDim2.new(1, -30, 0, 10),
                     Size = UDim2.new(0, 16, 0, 16),
                     Image = "rbxassetid://7733674079",
                     ImageColor3 = currentAccent,
                     ZIndex = 2
                 })
 
-                local btn = create("TextButton", {Parent = mFrame, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 34), Text = "", ZIndex = 3})
+                local btn = create("TextButton", {Parent = mFrame, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 36), Text = "", ZIndex = 3})
 
-                local optHolder = create("Frame", {
+                local optHolder = create("ScrollingFrame", {
                     Parent = mFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 0, 0, 34),
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(0, 0, 0, 36),
                     Size = UDim2.new(1, 0, 0, 0),
+                    ScrollBarThickness = 2,
+                    ScrollBarImageColor3 = currentAccent,
+                    CanvasSize = UDim2.new(0, 0, 0, 0),
+                    AutomaticCanvasSize = Enum.AutomaticSize.Y,
                     ZIndex = 2
                 })
-                create("UIListLayout", {Parent = optHolder, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 3)})
-                create("UIPadding", {Parent = optHolder, PaddingTop = UDim.new(0, 6), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), PaddingBottom = UDim.new(0, 6)})
+                create("UIListLayout", {Parent = optHolder, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4)})
+                create("UIPadding", {Parent = optHolder, PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 8)})
 
                 local multi = {}
                 table.insert(section.accentObjects, arrow)
@@ -1276,19 +1179,10 @@ function club:window(cfg)
                     callback(selected)
                 end
 
-                function multi:updateAccent(color) arrow.ImageColor3 = color end
+                function multi:updateAccent(color) arrow.ImageColor3 = color optHolder.ScrollBarImageColor3 = color end
 
                 function multi:load()
                     if config[flag] ~= nil then multi:set(config[flag]) end
-                end
-
-                local function close()
-                    if opened then
-                        opened = false
-                        tween(mFrame, {Size = UDim2.new(1, 0, 0, 34)}, 0.2)
-                        tween(arrow, {Rotation = 0}, 0.2)
-                        if activeDropdown == close then activeDropdown = nil end
-                    end
                 end
 
                 for _, option in ipairs(options) do
@@ -1298,7 +1192,7 @@ function club:window(cfg)
                         Parent = optHolder,
                         BackgroundColor3 = isSelected and currentAccent or theme.raised,
                         BorderSizePixel = 0,
-                        Size = UDim2.new(1, 0, 0, 26),
+                        Size = UDim2.new(1, 0, 0, 28),
                         Font = Enum.Font.Gotham,
                         Text = tostring(option),
                         TextColor3 = theme.text,
@@ -1306,7 +1200,7 @@ function club:window(cfg)
                         AutoButtonColor = false,
                         ZIndex = 3
                     })
-                    corner(optBtn, 3)
+                    corner(optBtn, 4)
                     stroke(optBtn, isSelected and currentAccent or theme.border, 1)
 
                     optBtn.MouseButton1Click:Connect(function()
@@ -1334,19 +1228,11 @@ function club:window(cfg)
                 end
 
                 btn.MouseButton1Click:Connect(function()
-                    if activeDropdown and activeDropdown ~= close then
-                        activeDropdown()
-                    end
-                    if activeColorPicker then
-                        activeColorPicker()
-                        activeColorPicker = nil
-                    end
                     opened = not opened
-                    local newSize = opened and (34 + 12 + (#options * 29)) or 34
+                    local maxHeight = math.min(#options * 32 + 16, 160)
+                    local newSize = opened and (36 + maxHeight) or 36
                     tween(mFrame, {Size = UDim2.new(1, 0, 0, newSize)}, 0.2)
                     tween(arrow, {Rotation = opened and 180 or 0}, 0.2)
-                    activeDropdown = opened and close or nil
-                    clickDetector.Visible = opened
                 end)
 
                 btn.MouseEnter:Connect(function() tween(mFrame, {BackgroundColor3 = theme.overlay}, 0.15) end)
@@ -1372,16 +1258,16 @@ function club:window(cfg)
                     Parent = sContent,
                     BackgroundColor3 = theme.raised,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(1, 0, 0, 34)
+                    Size = UDim2.new(1, 0, 0, 36)
                 })
-                corner(kFrame, 4)
+                corner(kFrame, 5)
                 stroke(kFrame, theme.border, 1)
 
                 create("TextLabel", {
                     Parent = kFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 0),
-                    Size = UDim2.new(0.55, 0, 1, 0),
+                    Position = UDim2.new(0, 12, 0, 0),
+                    Size = UDim2.new(0.5, 0, 1, 0),
                     Font = Enum.Font.GothamMedium,
                     Text = kName,
                     TextColor3 = theme.text,
@@ -1393,15 +1279,15 @@ function club:window(cfg)
                     Parent = kFrame,
                     BackgroundColor3 = theme.border,
                     BorderSizePixel = 0,
-                    Position = UDim2.new(0.55, 6, 0.5, -11),
-                    Size = UDim2.new(0.45, -16, 0, 22),
+                    Position = UDim2.new(0.5, 8, 0.5, -12),
+                    Size = UDim2.new(0.5, -20, 0, 24),
                     Font = Enum.Font.GothamBold,
                     Text = keyNames[key] or (typeof(key) == "EnumItem" and key.Name or "NONE"),
                     TextColor3 = theme.text,
                     TextSize = 9,
                     AutoButtonColor = false
                 })
-                corner(keyBtn, 3)
+                corner(keyBtn, 4)
                 stroke(keyBtn, theme.border, 1)
 
                 local keybind = {}
@@ -1470,18 +1356,18 @@ function club:window(cfg)
                     Parent = sContent,
                     BackgroundColor3 = theme.raised,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(1, 0, 0, 34),
+                    Size = UDim2.new(1, 0, 0, 36),
                     ClipsDescendants = true,
                     ZIndex = 1
                 })
-                corner(cFrame, 4)
+                corner(cFrame, 5)
                 stroke(cFrame, theme.border, 1)
 
                 create("TextLabel", {
                     Parent = cFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 0),
-                    Size = UDim2.new(1, -46, 0, 34),
+                    Position = UDim2.new(0, 12, 0, 0),
+                    Size = UDim2.new(1, -50, 0, 36),
                     Font = Enum.Font.GothamMedium,
                     Text = cName,
                     TextColor3 = theme.text,
@@ -1494,8 +1380,8 @@ function club:window(cfg)
                     Parent = cFrame,
                     BackgroundColor3 = color,
                     BorderSizePixel = 0,
-                    Position = UDim2.new(1, -30, 0.5, -11),
-                    Size = UDim2.new(0, 22, 0, 22),
+                    Position = UDim2.new(1, -34, 0.5, -12),
+                    Size = UDim2.new(0, 24, 0, 24),
                     Text = "",
                     AutoButtonColor = false,
                     ZIndex = 3
@@ -1507,11 +1393,11 @@ function club:window(cfg)
                     Parent = cFrame,
                     BackgroundColor3 = theme.overlay,
                     BorderSizePixel = 0,
-                    Position = UDim2.new(0, 8, 0, 40),
-                    Size = UDim2.new(1, -16, 0, 130),
+                    Position = UDim2.new(0, 10, 0, 42),
+                    Size = UDim2.new(1, -20, 0, 140),
                     ZIndex = 2
                 })
-                corner(pickerHolder, 5)
+                corner(pickerHolder, 6)
                 stroke(pickerHolder, theme.border, 1.5)
 
                 local hue, sat, val = color:ToHSV()
@@ -1520,19 +1406,17 @@ function club:window(cfg)
                     Parent = pickerHolder,
                     BackgroundColor3 = Color3.fromHSV(hue, 1, 1),
                     BorderSizePixel = 0,
-                    Position = UDim2.new(0, 8, 0, 8),
-                    Size = UDim2.new(1, -56, 0, 86),
+                    Position = UDim2.new(0, 10, 0, 10),
+                    Size = UDim2.new(1, -60, 0, 90),
                     Image = "rbxassetid://4155801252",
                     ImageColor3 = Color3.fromRGB(0, 0, 0),
-                    ImageTransparency = 0,
-                    ScaleType = Enum.ScaleType.Stretch,
                     AutoButtonColor = false,
                     ZIndex = 3
                 })
-                corner(satVal, 4)
+                corner(satVal, 5)
                 stroke(satVal, theme.border, 1)
 
-                local whiteness = create("ImageLabel", {
+                create("ImageLabel", {
                     Parent = satVal,
                     BackgroundTransparency = 1,
                     Size = UDim2.new(1, 0, 1, 0),
@@ -1546,26 +1430,25 @@ function club:window(cfg)
                     Parent = satVal,
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     BorderSizePixel = 0,
-                    Position = UDim2.new(sat, -4, 1 - val, -4),
-                    Size = UDim2.new(0, 8, 0, 8),
+                    Position = UDim2.new(sat, -5, 1 - val, -5),
+                    Size = UDim2.new(0, 10, 0, 10),
                     ZIndex = 5
                 })
-                corner(svCursor, 4)
+                corner(svCursor, 5)
                 stroke(svCursor, Color3.fromRGB(0, 0, 0), 2)
 
                 local hueSlider = create("ImageButton", {
                     Parent = pickerHolder,
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     BorderSizePixel = 0,
-                    Position = UDim2.new(1, -42, 0, 8),
-                    Size = UDim2.new(0, 34, 0, 86),
+                    Position = UDim2.new(1, -44, 0, 10),
+                    Size = UDim2.new(0, 34, 0, 90),
                     Image = "rbxassetid://3641079629",
-                    ImageColor3 = Color3.fromRGB(255, 255, 255),
                     ScaleType = Enum.ScaleType.Stretch,
                     AutoButtonColor = false,
                     ZIndex = 3
                 })
-                corner(hueSlider, 4)
+                corner(hueSlider, 5)
                 stroke(hueSlider, theme.border, 1)
 
                 local hueCursor = create("Frame", {
@@ -1583,8 +1466,8 @@ function club:window(cfg)
                     Parent = pickerHolder,
                     BackgroundColor3 = theme.border,
                     BorderSizePixel = 0,
-                    Position = UDim2.new(0, 8, 1, -28),
-                    Size = UDim2.new(1, -16, 0, 22),
+                    Position = UDim2.new(0, 10, 1, -32),
+                    Size = UDim2.new(1, -20, 0, 24),
                     Font = Enum.Font.GothamMedium,
                     Text = string.format("#%02X%02X%02X", color.R * 255, color.G * 255, color.B * 255),
                     TextColor3 = theme.text,
@@ -1592,9 +1475,9 @@ function club:window(cfg)
                     ClearTextOnFocus = false,
                     ZIndex = 3
                 })
-                corner(hexBox, 3)
+                corner(hexBox, 4)
                 stroke(hexBox, theme.border, 1)
-                create("UIPadding", {Parent = hexBox, PaddingLeft = UDim.new(0, 8)})
+                create("UIPadding", {Parent = hexBox, PaddingLeft = UDim.new(0, 10)})
 
                 local colorpicker = {}
 
@@ -1604,7 +1487,7 @@ function club:window(cfg)
                     preview.BackgroundColor3 = color
                     hue, sat, val = color:ToHSV()
                     satVal.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
-                    svCursor.Position = UDim2.new(sat, -4, 1 - val, -4)
+                    svCursor.Position = UDim2.new(sat, -5, 1 - val, -5)
                     hueCursor.Position = UDim2.new(0, -2, hue, -2)
                     hexBox.Text = string.format("#%02X%02X%02X", color.R * 255, color.G * 255, color.B * 255)
                     if syncAccent then window:setAccent(color) end
@@ -1615,33 +1498,15 @@ function club:window(cfg)
                     if config[flag] ~= nil then colorpicker:set(config[flag]) end
                 end
 
-                local function close()
-                    if opened then
-                        opened = false
-                        tween(cFrame, {Size = UDim2.new(1, 0, 0, 34)}, 0.2)
-                        if activeColorPicker == close then activeColorPicker = nil end
-                    end
-                end
-
                 preview.MouseButton1Click:Connect(function()
-                    if activeColorPicker and activeColorPicker ~= close then
-                        activeColorPicker()
-                    end
-                    if activeDropdown then
-                        activeDropdown()
-                        activeDropdown = nil
-                    end
                     opened = not opened
-                    tween(cFrame, {Size = UDim2.new(1, 0, 0, opened and 178 or 34)}, 0.2)
-                    activeColorPicker = opened and close or nil
-                    clickDetector.Visible = opened
+                    tween(cFrame, {Size = UDim2.new(1, 0, 0, opened and 190 or 36)}, 0.2)
                 end)
 
                 local svDragging = false
                 satVal.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
                         svDragging = true
-                        clickDetector.Visible = false
                         local function update()
                             local mouse = uis:GetMouseLocation()
                             sat = math.clamp((mouse.X - satVal.AbsolutePosition.X) / satVal.AbsoluteSize.X, 0, 1)
@@ -1649,17 +1514,14 @@ function club:window(cfg)
                             colorpicker:set(Color3.fromHSV(hue, sat, val))
                         end
                         update()
-                        local conn
-                        conn = uis.InputChanged:Connect(function(input2)
+                        local conn = uis.InputChanged:Connect(function(input2)
                             if input2.UserInputType == Enum.UserInputType.MouseMovement and svDragging then update() end
                         end)
-                        local conn2
-                        conn2 = uis.InputEnded:Connect(function(input2)
+                        local conn2 = uis.InputEnded:Connect(function(input2)
                             if input2.UserInputType == Enum.UserInputType.MouseButton1 then
                                 svDragging = false
                                 conn:Disconnect()
                                 conn2:Disconnect()
-                                if opened then clickDetector.Visible = true end
                             end
                         end)
                     end
@@ -1669,24 +1531,20 @@ function club:window(cfg)
                 hueSlider.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
                         hueDragging = true
-                        clickDetector.Visible = false
                         local function update()
                             local mouse = uis:GetMouseLocation()
                             hue = math.clamp((mouse.Y - hueSlider.AbsolutePosition.Y) / hueSlider.AbsoluteSize.Y, 0, 1)
                             colorpicker:set(Color3.fromHSV(hue, sat, val))
                         end
                         update()
-                        local conn
-                        conn = uis.InputChanged:Connect(function(input2)
+                        local conn = uis.InputChanged:Connect(function(input2)
                             if input2.UserInputType == Enum.UserInputType.MouseMovement and hueDragging then update() end
                         end)
-                        local conn2
-                        conn2 = uis.InputEnded:Connect(function(input2)
+                        local conn2 = uis.InputEnded:Connect(function(input2)
                             if input2.UserInputType == Enum.UserInputType.MouseButton1 then
                                 hueDragging = false
                                 conn:Disconnect()
                                 conn2:Disconnect()
-                                if opened then clickDetector.Visible = true end
                             end
                         end)
                     end
@@ -1708,12 +1566,12 @@ function club:window(cfg)
             end
 
             function section:label(text)
-                local lFrame = create("Frame", {Parent = sContent, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 18)})
+                local lFrame = create("Frame", {Parent = sContent, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 20)})
                 local label = create("TextLabel", {
                     Parent = lFrame,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 6, 0, 0),
-                    Size = UDim2.new(1, -12, 1, 0),
+                    Position = UDim2.new(0, 8, 0, 0),
+                    Size = UDim2.new(1, -16, 1, 0),
                     Font = Enum.Font.GothamMedium,
                     Text = text,
                     TextColor3 = theme.dimtext,
