@@ -214,7 +214,13 @@ function Library:Notify(title, text, duration)
 end
 
 function Library:CreateWatermark(options)
-    options = options or {}
+    options = options or {
+        ShowFPS = false,
+        ShowPing = false,
+        ShowTime = false,
+        ShowUser = false
+    }
+    
     local gui = Instance.new("ScreenGui")
     gui.Name = "Watermark"
     gui.Parent = CoreGui
@@ -224,6 +230,7 @@ function Library:CreateWatermark(options)
     frame.Position = UDim2.new(0, 10, 0, 10)
     frame.BackgroundColor3 = BG2
     frame.BorderSizePixel = 0
+    frame.Visible = false
     frame.Parent = gui
     
     Util:AddCorner(frame, 6)
@@ -256,7 +263,7 @@ function Library:CreateWatermark(options)
     fpsLabel.TextSize = 12
     fpsLabel.Font = Enum.Font.GothamBold
     fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
-    fpsLabel.Visible = options.ShowFPS ~= false
+    fpsLabel.Visible = options.ShowFPS or false
     fpsLabel.Parent = container
     
     local pingLabel = Instance.new("TextLabel")
@@ -267,7 +274,7 @@ function Library:CreateWatermark(options)
     pingLabel.TextSize = 12
     pingLabel.Font = Enum.Font.GothamBold
     pingLabel.TextXAlignment = Enum.TextXAlignment.Left
-    pingLabel.Visible = options.ShowPing ~= false
+    pingLabel.Visible = options.ShowPing or false
     pingLabel.Parent = container
     
     local timeLabel = Instance.new("TextLabel")
@@ -278,7 +285,7 @@ function Library:CreateWatermark(options)
     timeLabel.TextSize = 12
     timeLabel.Font = Enum.Font.GothamBold
     timeLabel.TextXAlignment = Enum.TextXAlignment.Left
-    timeLabel.Visible = options.ShowTime ~= false
+    timeLabel.Visible = options.ShowTime or false
     timeLabel.Parent = container
     
     local userLabel = Instance.new("TextLabel")
@@ -306,29 +313,41 @@ function Library:CreateWatermark(options)
             lastUpdate = tick()
         end
         
-        if options.ShowFPS ~= false then
+        if options.ShowFPS then
             fpsLabel.Text = "FPS: " .. fps
         end
         
-        if options.ShowPing ~= false then 
+        if options.ShowPing then 
             local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
             pingLabel.Text = "PING: " .. ping .. "ms"
         end
         
-        if options.ShowTime ~= false then
+        if options.ShowTime then
             timeLabel.Text = os.date("%H:%M:%S")
         end
     end)
+    
+    Library.WatermarkFrame = frame
+    Library.WatermarkOptions = options
+    
+    local function updateVisibility()
+        local anyVisible = options.ShowFPS or options.ShowPing or options.ShowTime or options.ShowUser
+        frame.Visible = anyVisible
+    end
+    
+    updateVisibility()
     
     return {
         SetVisible = function(v) frame.Visible = v end,
         SetOptions = function(o)
             options = o
-            fpsLabel.Visible = o.ShowFPS ~= false
-            pingLabel.Visible = o.ShowPing ~= false
-            timeLabel.Visible = o.ShowTime ~= false
+            fpsLabel.Visible = o.ShowFPS or false
+            pingLabel.Visible = o.ShowPing or false
+            timeLabel.Visible = o.ShowTime or false
             userLabel.Visible = o.ShowUser or false
-        end
+            updateVisibility()
+        end,
+        GetOptions = function() return options end
     }
 end
 
@@ -2443,7 +2462,69 @@ function Library:AddConfigTab()
         end
     })
     
-    local themeSection = tab:AddSection("Theme", "left")
+    local watermarkSection = tab:AddSection("Watermark", "left")
+    
+    watermarkSection:AddToggle({
+        Name = "Show FPS",
+        Flag = "WatermarkFPS",
+        Default = false,
+        Callback = function(value)
+            if Library.WatermarkOptions then
+                Library.WatermarkOptions.ShowFPS = value
+                if Library.WatermarkFrame then
+                    local anyVisible = Library.WatermarkOptions.ShowFPS or Library.WatermarkOptions.ShowPing or Library.WatermarkOptions.ShowTime or Library.WatermarkOptions.ShowUser
+                    Library.WatermarkFrame.Visible = anyVisible
+                end
+            end
+        end
+    })
+    
+    watermarkSection:AddToggle({
+        Name = "Show Ping",
+        Flag = "WatermarkPing",
+        Default = false,
+        Callback = function(value)
+            if Library.WatermarkOptions then
+                Library.WatermarkOptions.ShowPing = value
+                if Library.WatermarkFrame then
+                    local anyVisible = Library.WatermarkOptions.ShowFPS or Library.WatermarkOptions.ShowPing or Library.WatermarkOptions.ShowTime or Library.WatermarkOptions.ShowUser
+                    Library.WatermarkFrame.Visible = anyVisible
+                end
+            end
+        end
+    })
+    
+    watermarkSection:AddToggle({
+        Name = "Show Time",
+        Flag = "WatermarkTime",
+        Default = false,
+        Callback = function(value)
+            if Library.WatermarkOptions then
+                Library.WatermarkOptions.ShowTime = value
+                if Library.WatermarkFrame then
+                    local anyVisible = Library.WatermarkOptions.ShowFPS or Library.WatermarkOptions.ShowPing or Library.WatermarkOptions.ShowTime or Library.WatermarkOptions.ShowUser
+                    Library.WatermarkFrame.Visible = anyVisible
+                end
+            end
+        end
+    })
+    
+    watermarkSection:AddToggle({
+        Name = "Show Username",
+        Flag = "WatermarkUser",
+        Default = false,
+        Callback = function(value)
+            if Library.WatermarkOptions then
+                Library.WatermarkOptions.ShowUser = value
+                if Library.WatermarkFrame then
+                    local anyVisible = Library.WatermarkOptions.ShowFPS or Library.WatermarkOptions.ShowPing or Library.WatermarkOptions.ShowTime or Library.WatermarkOptions.ShowUser
+                    Library.WatermarkFrame.Visible = anyVisible
+                end
+            end
+        end
+    })
+    
+    local themeSection = tab:AddSection("Theme", "right")
     
     themeSection:AddColorPicker({
         Name = "Accent Color",
@@ -2477,7 +2558,7 @@ function Library:AddConfigTab()
         end
     })
     
-    local unloadSection = tab:AddSection("Danger Zone", "right")
+    local unloadSection = tab:AddSection("Danger Zone", "left")
     
     unloadSection:AddButton({
         Name = "Unload UI",
@@ -2490,7 +2571,7 @@ function Library:AddConfigTab()
         end
     })
     
-    local testSection = tab:AddSection("Test Features", "left")
+    local testSection = tab:AddSection("Test Features", "right")
     
     testSection:AddButton({
         Name = "Test Notification",
