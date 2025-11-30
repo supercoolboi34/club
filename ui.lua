@@ -898,7 +898,728 @@ function Library:CreateContextMenu(element, options)
     return menu
 end
 
-function Library:AddToggle(options)
+function Library:AddColorPicker(options)
+    options = options or {}
+    local name = options.Name or "Color"
+    local default = options.Default or Color3.fromRGB(255, 255, 255)
+    local flag = options.Flag
+    local callback = options.Callback or function() end
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 32)
+    frame.BackgroundColor3 = BG3
+    frame.BorderSizePixel = 0
+    frame.Parent = self.Container
+    
+    Util:AddCorner(frame, 5)
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -55, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = TEXT
+    label.TextSize = 12
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    
+    local colorDisplay = Instance.new("TextButton")
+    colorDisplay.Size = UDim2.new(0, 38, 0, 20)
+    colorDisplay.Position = UDim2.new(1, -44, 0.5, -10)
+    colorDisplay.BackgroundColor3 = default
+    colorDisplay.BorderSizePixel = 0
+    colorDisplay.Text = ""
+    colorDisplay.AutoButtonColor = false
+    colorDisplay.ZIndex = 5
+    colorDisplay.Parent = frame
+    
+    Util:AddCorner(colorDisplay, 5)
+    Util:AddStroke(colorDisplay, BORDER)
+    
+    local pickerOpen = false
+    local currentColor = default
+    
+    local picker = Instance.new("Frame")
+    picker.Size = UDim2.new(0, 200, 0, 180)
+    picker.Position = UDim2.new(1, 10, 0, 0)
+    picker.BackgroundColor3 = BG2
+    picker.BorderSizePixel = 0
+    picker.Visible = false
+    picker.ZIndex = 200
+    picker.Parent = frame
+    
+    Util:AddCorner(picker, 6)
+    Util:AddStroke(picker, ACCENT, 1.5)
+    
+    local saturationFrame = Instance.new("Frame")
+    saturationFrame.Size = UDim2.new(1, -20, 0, 120)
+    saturationFrame.Position = UDim2.new(0, 10, 0, 10)
+    saturationFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    saturationFrame.BorderSizePixel = 0
+    saturationFrame.ZIndex = 201
+    saturationFrame.Parent = picker
+    
+    Util:AddCorner(saturationFrame, 4)
+    
+    local saturationWhite = Instance.new("ImageLabel")
+    saturationWhite.Size = UDim2.new(1, 0, 1, 0)
+    saturationWhite.BackgroundTransparency = 1
+    saturationWhite.Image = "rbxassetid://4155801252"
+    saturationWhite.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    saturationWhite.ZIndex = 202
+    saturationWhite.Parent = saturationFrame
+    
+    Util:AddCorner(saturationWhite, 4)
+    
+    local saturationBlack = Instance.new("ImageLabel")
+    saturationBlack.Size = UDim2.new(1, 0, 1, 0)
+    saturationBlack.BackgroundTransparency = 1
+    saturationBlack.Image = "rbxassetid://4155801252"
+    saturationBlack.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    saturationBlack.Rotation = 90
+    saturationBlack.ZIndex = 203
+    saturationBlack.Parent = saturationFrame
+    
+    Util:AddCorner(saturationBlack, 4)
+    
+    local saturationPicker = Instance.new("Frame")
+    saturationPicker.Size = UDim2.new(0, 6, 0, 6)
+    saturationPicker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    saturationPicker.BorderSizePixel = 0
+    saturationPicker.ZIndex = 204
+    saturationPicker.Parent = saturationFrame
+    
+    Util:AddCorner(saturationPicker, 3)
+    Util:AddStroke(saturationPicker, Color3.fromRGB(0, 0, 0), 2)
+    
+    local hueFrame = Instance.new("Frame")
+    hueFrame.Size = UDim2.new(1, -20, 0, 15)
+    hueFrame.Position = UDim2.new(0, 10, 0, 140)
+    hueFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    hueFrame.BorderSizePixel = 0
+    hueFrame.ZIndex = 201
+    hueFrame.Parent = picker
+    
+    Util:AddCorner(hueFrame, 4)
+    
+    local hueGradient = Instance.new("UIGradient")
+    hueGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+        ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
+        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+    }
+    hueGradient.Parent = hueFrame
+    
+    local huePicker = Instance.new("Frame")
+    huePicker.Size = UDim2.new(0, 4, 1, 0)
+    huePicker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    huePicker.BorderSizePixel = 0
+    huePicker.ZIndex = 202
+    huePicker.Parent = hueFrame
+    
+    Util:AddStroke(huePicker, Color3.fromRGB(0, 0, 0), 2)
+    
+    local hexFrame = Instance.new("Frame")
+    hexFrame.Size = UDim2.new(1, -20, 0, 20)
+    hexFrame.Position = UDim2.new(0, 10, 0, 160)
+    hexFrame.BackgroundColor3 = BG1
+    hexFrame.BorderSizePixel = 0
+    hexFrame.ZIndex = 201
+    hexFrame.Parent = picker
+    
+    Util:AddCorner(hexFrame, 4)
+    Util:AddStroke(hexFrame, BORDER)
+    
+    local hexInput = Instance.new("TextBox")
+    hexInput.Size = UDim2.new(1, -10, 1, 0)
+    hexInput.Position = UDim2.new(0, 5, 0, 0)
+    hexInput.BackgroundTransparency = 1
+    hexInput.Text = "#FFFFFF"
+    hexInput.TextColor3 = TEXT
+    hexInput.TextSize = 11
+    hexInput.Font = Enum.Font.GothamMedium
+    hexInput.ZIndex = 202
+    hexInput.Parent = hexFrame
+    
+    local h, s, v = 0, 0, 1
+    
+    local function rgbToHsv(color)
+        local r, g, b = color.R, color.G, color.B
+        local max, min = math.max(r, g, b), math.min(r, g, b)
+        local delta = max - min
+        
+        local hue = 0
+        if delta > 0 then
+            if max == r then
+                hue = ((g - b) / delta) % 6
+            elseif max == g then
+                hue = (b - r) / delta + 2
+            else
+                hue = (r - g) / delta + 4
+            end
+            hue = hue / 6
+        end
+        
+        local sat = max == 0 and 0 or delta / max
+        local val = max
+        
+        return hue, sat, val
+    end
+    
+    local function hsvToRgb(hue, sat, val)
+        local c = val * sat
+        local x = c * (1 - math.abs((hue * 6) % 2 - 1))
+        local m = val - c
+        
+        local r, g, b
+        if hue < 1/6 then
+            r, g, b = c, x, 0
+        elseif hue < 2/6 then
+            r, g, b = x, c, 0
+        elseif hue < 3/6 then
+            r, g, b = 0, c, x
+        elseif hue < 4/6 then
+            r, g, b = 0, x, c
+        elseif hue < 5/6 then
+            r, g, b = x, 0, c
+        else
+            r, g, b = c, 0, x
+        end
+        
+        return Color3.fromRGB(
+            math.floor((r + m) * 255),
+            math.floor((g + m) * 255),
+            math.floor((b + m) * 255)
+        )
+    end
+    
+    local function updateColor()
+        currentColor = hsvToRgb(h, s, v)
+        colorDisplay.BackgroundColor3 = currentColor
+        saturationFrame.BackgroundColor3 = hsvToRgb(h, 1, 1)
+        hexInput.Text = string.format("#%02X%02X%02X", 
+            math.floor(currentColor.R * 255),
+            math.floor(currentColor.G * 255),
+            math.floor(currentColor.B * 255)
+        )
+        
+        if flag then
+            Library.Flags[flag] = currentColor
+        end
+        callback(currentColor)
+    end
+    
+    h, s, v = rgbToHsv(default)
+    saturationPicker.Position = UDim2.new(s, -3, 1 - v, -3)
+    huePicker.Position = UDim2.new(h, -2, 0, 0)
+    updateColor()
+    
+    local satDragging = false
+    local hueDragging = false
+    
+    saturationFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            satDragging = true
+        end
+    end)
+    
+    hueFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            hueDragging = true
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            satDragging = false
+            hueDragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            if satDragging then
+                local pos = input.Position
+                local framePos = saturationFrame.AbsolutePosition
+                local frameSize = saturationFrame.AbsoluteSize
+                
+                local x = math.clamp((pos.X - framePos.X) / frameSize.X, 0, 1)
+                local y = math.clamp((pos.Y - framePos.Y) / frameSize.Y, 0, 1)
+                
+                s = x
+                v = 1 - y
+                
+                saturationPicker.Position = UDim2.new(x, -3, y, -3)
+                updateColor()
+            elseif hueDragging then
+                local pos = input.Position
+                local framePos = hueFrame.AbsolutePosition
+                local frameSize = hueFrame.AbsoluteSize
+                
+                local x = math.clamp((pos.X - framePos.X) / frameSize.X, 0, 1)
+                h = x
+                
+                huePicker.Position = UDim2.new(x, -2, 0, 0)
+                updateColor()
+            end
+        end
+    end)
+    
+    hexInput.FocusLost:Connect(function()
+        local hex = hexInput.Text:gsub("#", "")
+        if #hex == 6 then
+            local r = tonumber(hex:sub(1, 2), 16)
+            local g = tonumber(hex:sub(3, 4), 16)
+            local b = tonumber(hex:sub(5, 6), 16)
+            if r and g and b then
+                currentColor = Color3.fromRGB(r, g, b)
+                h, s, v = rgbToHsv(currentColor)
+                saturationPicker.Position = UDim2.new(s, -3, 1 - v, -3)
+                huePicker.Position = UDim2.new(h, -2, 0, 0)
+                updateColor()
+            end
+        end
+    end)
+    
+    colorDisplay.MouseButton1Click:Connect(function()
+        pickerOpen = not pickerOpen
+        picker.Visible = pickerOpen
+    end)
+    
+    if flag then
+        Library.Flags[flag] = default
+        Library.Callbacks[flag] = callback
+    end
+    
+    return {
+        SetValue = function(color)
+            currentColor = color
+            h, s, v = rgbToHsv(color)
+            saturationPicker.Position = UDim2.new(s, -3, 1 - v, -3)
+            huePicker.Position = UDim2.new(h, -2, 0, 0)
+            updateColor()
+        end,
+        GetValue = function() return currentColor end
+    }
+end
+
+function Library:AddToggleWithColor(options)
+    options = options or {}
+    local name = options.Name or "Toggle"
+    local flag = options.Flag
+    local default = options.Default or false
+    local defaultColor = options.DefaultColor or Color3.fromRGB(120, 120, 255)
+    local colorFlag = options.ColorFlag
+    local callback = options.Callback or function() end
+    local colorCallback = options.ColorCallback or function() end
+    local mode = "Toggle"
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 32)
+    frame.BackgroundColor3 = BG3
+    frame.BorderSizePixel = 0
+    frame.Parent = self.Container
+    
+    Util:AddCorner(frame, 5)
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -90, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = TEXT
+    label.TextSize = 12
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    
+    local colorDisplay = Instance.new("TextButton")
+    colorDisplay.Size = UDim2.new(0, 20, 0, 20)
+    colorDisplay.Position = UDim2.new(1, -82, 0.5, -10)
+    colorDisplay.BackgroundColor3 = defaultColor
+    colorDisplay.BorderSizePixel = 0
+    colorDisplay.Text = ""
+    colorDisplay.AutoButtonColor = false
+    colorDisplay.ZIndex = 5
+    colorDisplay.Parent = frame
+    
+    Util:AddCorner(colorDisplay, 5)
+    Util:AddStroke(colorDisplay, BORDER)
+    
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(0, 38, 0, 20)
+    toggle.Position = UDim2.new(1, -56, 0.5, -10)
+    toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    toggle.BorderSizePixel = 0
+    toggle.Text = ""
+    toggle.AutoButtonColor = false
+    toggle.Parent = frame
+    
+    Util:AddCorner(toggle, 10)
+    Util:AddStroke(toggle, BORDER)
+    
+    local toggleGradient = Instance.new("UIGradient")
+    toggleGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 35))
+    }
+    toggleGradient.Rotation = 90
+    toggleGradient.Parent = toggle
+    
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.Position = UDim2.new(0, 2, 0.5, -8)
+    knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+    knob.BorderSizePixel = 0
+    knob.Parent = toggle
+    
+    Util:AddCorner(knob, 8)
+    
+    local pickerOpen = false
+    local currentColor = defaultColor
+    local state = default
+    
+    local picker = Instance.new("Frame")
+    picker.Size = UDim2.new(0, 200, 0, 180)
+    picker.Position = UDim2.new(1, 10, 0, 0)
+    picker.BackgroundColor3 = BG2
+    picker.BorderSizePixel = 0
+    picker.Visible = false
+    picker.ZIndex = 200
+    picker.Parent = frame
+    
+    Util:AddCorner(picker, 6)
+    Util:AddStroke(picker, ACCENT, 1.5)
+    
+    local saturationFrame = Instance.new("Frame")
+    saturationFrame.Size = UDim2.new(1, -20, 0, 120)
+    saturationFrame.Position = UDim2.new(0, 10, 0, 10)
+    saturationFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    saturationFrame.BorderSizePixel = 0
+    saturationFrame.ZIndex = 201
+    saturationFrame.Parent = picker
+    
+    Util:AddCorner(saturationFrame, 4)
+    
+    local saturationWhite = Instance.new("ImageLabel")
+    saturationWhite.Size = UDim2.new(1, 0, 1, 0)
+    saturationWhite.BackgroundTransparency = 1
+    saturationWhite.Image = "rbxassetid://4155801252"
+    saturationWhite.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    saturationWhite.ZIndex = 202
+    saturationWhite.Parent = saturationFrame
+    
+    Util:AddCorner(saturationWhite, 4)
+    
+    local saturationBlack = Instance.new("ImageLabel")
+    saturationBlack.Size = UDim2.new(1, 0, 1, 0)
+    saturationBlack.BackgroundTransparency = 1
+    saturationBlack.Image = "rbxassetid://4155801252"
+    saturationBlack.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    saturationBlack.Rotation = 90
+    saturationBlack.ZIndex = 203
+    saturationBlack.Parent = saturationFrame
+    
+    Util:AddCorner(saturationBlack, 4)
+    
+    local saturationPicker = Instance.new("Frame")
+    saturationPicker.Size = UDim2.new(0, 6, 0, 6)
+    saturationPicker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    saturationPicker.BorderSizePixel = 0
+    saturationPicker.ZIndex = 204
+    saturationPicker.Parent = saturationFrame
+    
+    Util:AddCorner(saturationPicker, 3)
+    Util:AddStroke(saturationPicker, Color3.fromRGB(0, 0, 0), 2)
+    
+    local hueFrame = Instance.new("Frame")
+    hueFrame.Size = UDim2.new(1, -20, 0, 15)
+    hueFrame.Position = UDim2.new(0, 10, 0, 140)
+    hueFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    hueFrame.BorderSizePixel = 0
+    hueFrame.ZIndex = 201
+    hueFrame.Parent = picker
+    
+    Util:AddCorner(hueFrame, 4)
+    
+    local hueGradient = Instance.new("UIGradient")
+    hueGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+        ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
+        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+    }
+    hueGradient.Parent = hueFrame
+    
+    local huePicker = Instance.new("Frame")
+    huePicker.Size = UDim2.new(0, 4, 1, 0)
+    huePicker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    huePicker.BorderSizePixel = 0
+    huePicker.ZIndex = 202
+    huePicker.Parent = hueFrame
+    
+    Util:AddStroke(huePicker, Color3.fromRGB(0, 0, 0), 2)
+    
+    local hexFrame = Instance.new("Frame")
+    hexFrame.Size = UDim2.new(1, -20, 0, 20)
+    hexFrame.Position = UDim2.new(0, 10, 0, 160)
+    hexFrame.BackgroundColor3 = BG1
+    hexFrame.BorderSizePixel = 0
+    hexFrame.ZIndex = 201
+    hexFrame.Parent = picker
+    
+    Util:AddCorner(hexFrame, 4)
+    Util:AddStroke(hexFrame, BORDER)
+    
+    local hexInput = Instance.new("TextBox")
+    hexInput.Size = UDim2.new(1, -10, 1, 0)
+    hexInput.Position = UDim2.new(0, 5, 0, 0)
+    hexInput.BackgroundTransparency = 1
+    hexInput.Text = "#FFFFFF"
+    hexInput.TextColor3 = TEXT
+    hexInput.TextSize = 11
+    hexInput.Font = Enum.Font.GothamMedium
+    hexInput.ZIndex = 202
+    hexInput.Parent = hexFrame
+    
+    local h, s, v = 0, 0, 1
+    
+    local function rgbToHsv(color)
+        local r, g, b = color.R, color.G, color.B
+        local max, min = math.max(r, g, b), math.min(r, g, b)
+        local delta = max - min
+        
+        local hue = 0
+        if delta > 0 then
+            if max == r then
+                hue = ((g - b) / delta) % 6
+            elseif max == g then
+                hue = (b - r) / delta + 2
+            else
+                hue = (r - g) / delta + 4
+            end
+            hue = hue / 6
+        end
+        
+        local sat = max == 0 and 0 or delta / max
+        local val = max
+        
+        return hue, sat, val
+    end
+    
+    local function hsvToRgb(hue, sat, val)
+        local c = val * sat
+        local x = c * (1 - math.abs((hue * 6) % 2 - 1))
+        local m = val - c
+        
+        local r, g, b
+        if hue < 1/6 then
+            r, g, b = c, x, 0
+        elseif hue < 2/6 then
+            r, g, b = x, c, 0
+        elseif hue < 3/6 then
+            r, g, b = 0, c, x
+        elseif hue < 4/6 then
+            r, g, b = 0, x, c
+        elseif hue < 5/6 then
+            r, g, b = x, 0, c
+        else
+            r, g, b = c, 0, x
+        end
+        
+        return Color3.fromRGB(
+            math.floor((r + m) * 255),
+            math.floor((g + m) * 255),
+            math.floor((b + m) * 255)
+        )
+    end
+    
+    local function updateColor()
+        currentColor = hsvToRgb(h, s, v)
+        colorDisplay.BackgroundColor3 = currentColor
+        saturationFrame.BackgroundColor3 = hsvToRgb(h, 1, 1)
+        hexInput.Text = string.format("#%02X%02X%02X", 
+            math.floor(currentColor.R * 255),
+            math.floor(currentColor.G * 255),
+            math.floor(currentColor.B * 255)
+        )
+        
+        if colorFlag then
+            Library.Flags[colorFlag] = currentColor
+        end
+        colorCallback(currentColor)
+    end
+    
+    h, s, v = rgbToHsv(defaultColor)
+    saturationPicker.Position = UDim2.new(s, -3, 1 - v, -3)
+    huePicker.Position = UDim2.new(h, -2, 0, 0)
+    updateColor()
+    
+    local satDragging = false
+    local hueDragging = false
+    
+    saturationFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            satDragging = true
+            local pos = input.Position
+            local framePos = saturationFrame.AbsolutePosition
+            local frameSize = saturationFrame.AbsoluteSize
+            
+            local x = math.clamp((pos.X - framePos.X) / frameSize.X, 0, 1)
+            local y = math.clamp((pos.Y - framePos.Y) / frameSize.Y, 0, 1)
+            
+            s = x
+            v = 1 - y
+            
+            saturationPicker.Position = UDim2.new(x, -3, y, -3)
+            updateColor()
+        end
+    end)
+    
+    hueFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            hueDragging = true
+            local pos = input.Position
+            local framePos = hueFrame.AbsolutePosition
+            local frameSize = hueFrame.AbsoluteSize
+            
+            local x = math.clamp((pos.X - framePos.X) / frameSize.X, 0, 1)
+            h = x
+            
+            huePicker.Position = UDim2.new(x, -2, 0, 0)
+            updateColor()
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            satDragging = false
+            hueDragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            if satDragging then
+                local pos = input.Position
+                local framePos = saturationFrame.AbsolutePosition
+                local frameSize = saturationFrame.AbsoluteSize
+                
+                local x = math.clamp((pos.X - framePos.X) / frameSize.X, 0, 1)
+                local y = math.clamp((pos.Y - framePos.Y) / frameSize.Y, 0, 1)
+                
+                s = x
+                v = 1 - y
+                
+                saturationPicker.Position = UDim2.new(x, -3, y, -3)
+                updateColor()
+            elseif hueDragging then
+                local pos = input.Position
+                local framePos = hueFrame.AbsolutePosition
+                local frameSize = hueFrame.AbsoluteSize
+                
+                local x = math.clamp((pos.X - framePos.X) / frameSize.X, 0, 1)
+                h = x
+                
+                huePicker.Position = UDim2.new(x, -2, 0, 0)
+                updateColor()
+            end
+        end
+    end)
+    
+    hexInput.FocusLost:Connect(function()
+        local hex = hexInput.Text:gsub("#", "")
+        if #hex == 6 then
+            local r = tonumber(hex:sub(1, 2), 16)
+            local g = tonumber(hex:sub(3, 4), 16)
+            local b = tonumber(hex:sub(5, 6), 16)
+            if r and g and b then
+                currentColor = Color3.fromRGB(r, g, b)
+                h, s, v = rgbToHsv(currentColor)
+                saturationPicker.Position = UDim2.new(s, -3, 1 - v, -3)
+                huePicker.Position = UDim2.new(h, -2, 0, 0)
+                updateColor()
+            end
+        end
+    end)
+    
+    colorDisplay.MouseButton1Click:Connect(function()
+        pickerOpen = not pickerOpen
+        picker.Visible = pickerOpen
+    end)
+    
+    if flag then
+        Library.Flags[flag] = state
+        Library.Callbacks[flag] = callback
+    end
+    
+    if colorFlag then
+        Library.Flags[colorFlag] = defaultColor
+    end
+    
+    local function set(v)
+        state = v
+        
+        if state then
+            Util:Tween(toggle, {BackgroundColor3 = ACCENT}, 0.15)
+            toggleGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, ACCENT),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 100, 220))
+            }
+            Util:Tween(knob, {Position = UDim2.new(1, -18, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.15)
+        else
+            Util:Tween(toggle, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.15)
+            toggleGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 35))
+            }
+            Util:Tween(knob, {Position = UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(200, 200, 200)}, 0.15)
+        end
+        
+        if flag then
+            Library.Flags[flag] = state
+        end
+        
+        callback(state)
+    end
+    
+    set(default)
+    
+    toggle.MouseButton1Click:Connect(function()
+        if mode == "Toggle" then
+            set(not state)
+        elseif mode == "Always" then
+            set(true)
+        end
+    end)
+    
+    Library:CreateContextMenu(frame, {
+        {Name = "Toggle", Callback = function() mode = "Toggle" Library:Notify("Mode", "Set to Toggle", 1) end},
+        {Name = "Hold", Callback = function() mode = "Hold" Library:Notify("Mode", "Set to Hold", 1) end},
+        {Name = "Always", Callback = function() mode = "Always" set(true) Library:Notify("Mode", "Set to Always", 1) end}
+    })
+    
+    return {
+        SetValue = set,
+        GetValue = function() return state end,
+        SetColor = function(color)
+            currentColor = color
+            h, s, v = rgbToHsv(color)
+            saturationPicker.Position = UDim2.new(s, -3, 1 - v, -3)
+            huePicker.Position = UDim2.new(h, -2, 0, 0)
+            updateColor()
+        end,
+        GetColor = function() return currentColor end
+    }
+end
     options = options or {}
     local name = options.Name or "Toggle"
     local flag = options.Flag
@@ -1719,6 +2440,53 @@ function Library:AddConfigTab()
             if active then
                 Library.Gui.Enabled = not Library.Gui.Enabled
             end
+        end
+    })
+    
+    local themeSection = tab:AddSection("Theme", "left")
+    
+    themeSection:AddColorPicker({
+        Name = "Accent Color",
+        Default = ACCENT,
+        Flag = "AccentColor",
+        Callback = function(color)
+            ACCENT = color
+        end
+    })
+    
+    themeSection:AddDropdown({
+        Name = "Theme",
+        Flag = "Theme",
+        List = {"Dark", "Darker", "Black"},
+        Default = "Dark",
+        Callback = function(value)
+            if value == "Dark" then
+                BG1 = Color3.fromRGB(15, 15, 15)
+                BG2 = Color3.fromRGB(20, 20, 20)
+                BG3 = Color3.fromRGB(25, 25, 25)
+            elseif value == "Darker" then
+                BG1 = Color3.fromRGB(10, 10, 10)
+                BG2 = Color3.fromRGB(15, 15, 15)
+                BG3 = Color3.fromRGB(20, 20, 20)
+            elseif value == "Black" then
+                BG1 = Color3.fromRGB(0, 0, 0)
+                BG2 = Color3.fromRGB(5, 5, 5)
+                BG3 = Color3.fromRGB(10, 10, 10)
+            end
+            Library:Notify("Theme", "Theme changed to " .. value, 2)
+        end
+    })
+    
+    local unloadSection = tab:AddSection("Danger Zone", "right")
+    
+    unloadSection:AddButton({
+        Name = "Unload UI",
+        Callback = function()
+            Library.Gui:Destroy()
+            for _, connection in pairs(getconnections(game:GetService("RunService").RenderStepped)) do
+                connection:Disable()
+            end
+            Library:Notify("Unloaded", "UI has been unloaded", 2)
         end
     })
     
