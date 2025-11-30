@@ -485,7 +485,7 @@ function Library:Create(options)
     sidebar.Position = UDim2.new(0, 0, 0, 45)
     sidebar.BackgroundColor3 = BG2
     sidebar.BorderSizePixel = 0
-    sidebar.ClipsDescendants = false
+    sidebar.ClipsDescendants = true
     sidebar.Parent = main
     
     local sideStroke = Util:AddStroke(sidebar, BORDER)
@@ -509,9 +509,10 @@ function Library:Create(options)
     end)
     
     local content = Instance.new("Frame")
-    content.Size = UDim2.new(1, -165, 1, -50)
+    content.Size = UDim2.new(1, -170, 1, -55)
     content.Position = UDim2.new(0, 165, 0, 50)
     content.BackgroundTransparency = 1
+    content.ClipsDescendants = true
     content.Parent = main
     
     Util:Drag(main, topbar)
@@ -541,7 +542,7 @@ function Library:AddTab(name, icon)
     button.Parent = self.Sidebar
     
     Util:AddCorner(button, 6)
-    Util:AddStroke(button, Color3.fromRGB(30, 30, 30), 1)
+    local buttonStroke = Util:AddStroke(button, Color3.fromRGB(30, 30, 30), 1)
     
     local indicator = Instance.new("Frame")
     indicator.Size = UDim2.new(0, 3, 1, -10)
@@ -615,20 +616,20 @@ function Library:AddTab(name, icon)
     
     button.MouseButton1Click:Connect(function()
         for _, tab in pairs(self.Tabs) do
-            tab.Button.BackgroundColor3 = BG1
+            Util:Tween(tab.Button, {BackgroundColor3 = BG1}, 0.15)
             tab.Indicator.Visible = false
-            tab.Icon.ImageColor3 = TEXT_DIM
-            tab.Label.TextColor3 = TEXT_DIM
+            Util:Tween(tab.Icon, {ImageColor3 = TEXT_DIM}, 0.15)
+            Util:Tween(tab.Label, {TextColor3 = TEXT_DIM}, 0.15)
             tab.Container.Visible = false
-            tab.Stroke.Color = Color3.fromRGB(30, 30, 30)
+            Util:Tween(tab.Stroke, {Color = Color3.fromRGB(30, 30, 30), Transparency = 0}, 0.15)
         end
         
-        button.BackgroundColor3 = BG2
+        Util:Tween(button, {BackgroundColor3 = Color3.fromRGB(18, 18, 22)}, 0.15)
         indicator.Visible = true
-        iconLabel.ImageColor3 = ACCENT
-        label.TextColor3 = TEXT
+        Util:Tween(iconLabel, {ImageColor3 = ACCENT}, 0.15)
+        Util:Tween(label, {TextColor3 = TEXT}, 0.15)
         container.Visible = true
-        button.UIStroke.Color = ACCENT
+        Util:Tween(buttonStroke, {Color = ACCENT, Transparency = 0}, 0.15)
         self.CurrentTab = name
     end)
     
@@ -656,18 +657,18 @@ function Library:AddTab(name, icon)
         LeftColumn = leftColumn,
         RightColumn = rightColumn,
         CurrentColumn = "left",
-        Stroke = button.UIStroke
+        Stroke = buttonStroke
     }
     
     self.Tabs[name] = tab
     
     if not self.CurrentTab then
-        button.BackgroundColor3 = BG2
+        button.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
         indicator.Visible = true
         iconLabel.ImageColor3 = ACCENT
         label.TextColor3 = TEXT
         container.Visible = true
-        button.UIStroke.Color = ACCENT
+        buttonStroke.Color = ACCENT
         self.CurrentTab = name
     end
     
@@ -908,10 +909,12 @@ function Library:CreateContextMenu(element, options)
         menu.Size = UDim2.new(0, 120, 0, layout.AbsoluteContentSize.Y + 4)
     end)
     
-    element.MouseButton2Click:Connect(function()
-        local mouse = UserInputService:GetMouseLocation()
-        menu.Position = UDim2.new(0, mouse.X, 0, mouse.Y - 36)
-        menu.Visible = not menu.Visible
+    element.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            local mouse = UserInputService:GetMouseLocation()
+            menu.Position = UDim2.new(0, mouse.X, 0, mouse.Y - 36)
+            menu.Visible = not menu.Visible
+        end
     end)
     
     return menu
