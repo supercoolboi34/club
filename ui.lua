@@ -984,26 +984,48 @@ function Library:AddColorPicker(options)
     
     Util:AddCorner(saturationFrame, 4)
     
-    local saturationWhite = Instance.new("ImageLabel")
+    local saturationWhite = Instance.new("Frame")
     saturationWhite.Size = UDim2.new(1, 0, 1, 0)
-    saturationWhite.BackgroundTransparency = 1
-    saturationWhite.Image = "rbxassetid://4155801252"
-    saturationWhite.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    saturationWhite.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    saturationWhite.BackgroundTransparency = 0
+    saturationWhite.BorderSizePixel = 0
     saturationWhite.ZIndex = 202
     saturationWhite.Parent = saturationFrame
     
     Util:AddCorner(saturationWhite, 4)
     
-    local saturationBlack = Instance.new("ImageLabel")
+    local whiteGradient = Instance.new("UIGradient")
+    whiteGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+    }
+    whiteGradient.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0, 0),
+        NumberSequenceKeypoint.new(1, 1)
+    }
+    whiteGradient.Parent = saturationWhite
+    
+    local saturationBlack = Instance.new("Frame")
     saturationBlack.Size = UDim2.new(1, 0, 1, 0)
-    saturationBlack.BackgroundTransparency = 1
-    saturationBlack.Image = "rbxassetid://4155801252"
-    saturationBlack.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    saturationBlack.Rotation = 90
+    saturationBlack.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    saturationBlack.BackgroundTransparency = 0
+    saturationBlack.BorderSizePixel = 0
     saturationBlack.ZIndex = 203
     saturationBlack.Parent = saturationFrame
     
     Util:AddCorner(saturationBlack, 4)
+    
+    local blackGradient = Instance.new("UIGradient")
+    blackGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+    }
+    blackGradient.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0, 1),
+        NumberSequenceKeypoint.new(1, 0)
+    }
+    blackGradient.Rotation = 90
+    blackGradient.Parent = saturationBlack
     
     local saturationPicker = Instance.new("Frame")
     saturationPicker.Size = UDim2.new(0, 6, 0, 6)
@@ -1328,26 +1350,48 @@ function Library:AddToggleWithColor(options)
     
     Util:AddCorner(saturationFrame, 4)
     
-    local saturationWhite = Instance.new("ImageLabel")
+    local saturationWhite = Instance.new("Frame")
     saturationWhite.Size = UDim2.new(1, 0, 1, 0)
-    saturationWhite.BackgroundTransparency = 1
-    saturationWhite.Image = "rbxassetid://4155801252"
-    saturationWhite.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    saturationWhite.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    saturationWhite.BackgroundTransparency = 0
+    saturationWhite.BorderSizePixel = 0
     saturationWhite.ZIndex = 202
     saturationWhite.Parent = saturationFrame
     
     Util:AddCorner(saturationWhite, 4)
     
-    local saturationBlack = Instance.new("ImageLabel")
+    local whiteGradient = Instance.new("UIGradient")
+    whiteGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+    }
+    whiteGradient.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0, 0),
+        NumberSequenceKeypoint.new(1, 1)
+    }
+    whiteGradient.Parent = saturationWhite
+    
+    local saturationBlack = Instance.new("Frame")
     saturationBlack.Size = UDim2.new(1, 0, 1, 0)
-    saturationBlack.BackgroundTransparency = 1
-    saturationBlack.Image = "rbxassetid://4155801252"
-    saturationBlack.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    saturationBlack.Rotation = 90
+    saturationBlack.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    saturationBlack.BackgroundTransparency = 0
+    saturationBlack.BorderSizePixel = 0
     saturationBlack.ZIndex = 203
     saturationBlack.Parent = saturationFrame
     
     Util:AddCorner(saturationBlack, 4)
+    
+    local blackGradient = Instance.new("UIGradient")
+    blackGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+    }
+    blackGradient.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0, 1),
+        NumberSequenceKeypoint.new(1, 0)
+    }
+    blackGradient.Rotation = 90
+    blackGradient.Parent = saturationBlack
     
     local saturationPicker = Instance.new("Frame")
     saturationPicker.Size = UDim2.new(0, 6, 0, 6)
