@@ -141,53 +141,53 @@ function Library:Notify(title, text, duration)
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 300, 0, 0)
-    frame.Position = UDim2.new(1, -310, 1, 10)
+    frame.Size = UDim2.new(0, 320, 0, 0)
+    frame.Position = UDim2.new(1, -330, 1, 10)
     frame.BackgroundColor3 = BG2
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = true
     frame.Parent = gui
     
     Util:AddCorner(frame, 8)
-    Util:AddStroke(frame, BORDER, 1.5)
+    Util:AddStroke(frame, ACCENT, 1.5)
     
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, BG2),
-        ColorSequenceKeypoint.new(1, BG1)
-    }
-    gradient.Rotation = 45
-    gradient.Parent = frame
+    local innerFrame = Instance.new("Frame")
+    innerFrame.Size = UDim2.new(1, -2, 1, -2)
+    innerFrame.Position = UDim2.new(0, 1, 0, 1)
+    innerFrame.BackgroundColor3 = BG1
+    innerFrame.BorderSizePixel = 0
+    innerFrame.Parent = frame
+    
+    Util:AddCorner(innerFrame, 7)
     
     local accent = Instance.new("Frame")
-    accent.Size = UDim2.new(1, 0, 0, 3)
+    accent.Size = UDim2.new(0, 4, 1, 0)
     accent.BackgroundColor3 = ACCENT
     accent.BorderSizePixel = 0
-    accent.Parent = frame
+    accent.Parent = innerFrame
     
-    Util:AddCorner(accent, 8)
-    
-    local accentCover = Instance.new("Frame")
-    accentCover.Size = UDim2.new(1, 0, 0, 5)
-    accentCover.Position = UDim2.new(0, 0, 1, -5)
-    accentCover.BackgroundColor3 = ACCENT
-    accentCover.BorderSizePixel = 0
-    accentCover.Parent = accent
+    local accentGradient = Instance.new("UIGradient")
+    accentGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, ACCENT),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 80, 200))
+    }
+    accentGradient.Rotation = 90
+    accentGradient.Parent = accent
     
     local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -30, 0, 22)
-    titleLabel.Position = UDim2.new(0, 15, 0, 15)
+    titleLabel.Size = UDim2.new(1, -25, 0, 20)
+    titleLabel.Position = UDim2.new(0, 15, 0, 12)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = title
     titleLabel.TextColor3 = TEXT
     titleLabel.TextSize = 14
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.Parent = frame
+    titleLabel.Parent = innerFrame
     
     local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, -30, 0, 0)
-    textLabel.Position = UDim2.new(0, 15, 0, 40)
+    textLabel.Size = UDim2.new(1, -25, 0, 0)
+    textLabel.Position = UDim2.new(0, 15, 0, 35)
     textLabel.BackgroundTransparency = 1
     textLabel.Text = text
     textLabel.TextColor3 = TEXT_DIM
@@ -197,16 +197,16 @@ function Library:Notify(title, text, duration)
     textLabel.TextYAlignment = Enum.TextYAlignment.Top
     textLabel.TextWrapped = true
     textLabel.AutomaticSize = Enum.AutomaticSize.Y
-    textLabel.Parent = frame
+    textLabel.Parent = innerFrame
     
     task.wait()
     local textHeight = textLabel.AbsoluteSize.Y
-    local totalHeight = 65 + textHeight
+    local totalHeight = 55 + textHeight
     
-    Util:Tween(frame, {Size = UDim2.new(0, 300, 0, totalHeight), Position = UDim2.new(1, -310, 1, -totalHeight - 10)}, 0.4)
+    Util:Tween(frame, {Size = UDim2.new(0, 320, 0, totalHeight), Position = UDim2.new(1, -330, 1, -totalHeight - 10)}, 0.4)
     
     task.delay(duration or 3, function()
-        Util:Tween(frame, {Position = UDim2.new(1, -310, 1, 10)}, 0.3)
+        Util:Tween(frame, {Position = UDim2.new(1, -330, 1, 10)}, 0.3)
         task.wait(0.3)
         gui:Destroy()
     end)
@@ -219,7 +219,7 @@ function Library:CreateWatermark(options)
     gui.Parent = CoreGui
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 220, 0, 28)
+    frame.Size = UDim2.new(0, 250, 0, 28)
     frame.Position = UDim2.new(0, 10, 0, 10)
     frame.BackgroundColor3 = BG2
     frame.BorderSizePixel = 0
@@ -234,15 +234,51 @@ function Library:CreateWatermark(options)
     accent.BorderSizePixel = 0
     accent.Parent = frame
     
-    local text = Instance.new("TextLabel")
-    text.Size = UDim2.new(1, -12, 1, -2)
-    text.Position = UDim2.new(0, 6, 0, 2)
-    text.BackgroundTransparency = 1
-    text.TextColor3 = TEXT
-    text.TextSize = 12
-    text.Font = Enum.Font.GothamBold
-    text.TextXAlignment = Enum.TextXAlignment.Left
-    text.Parent = frame
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -12, 1, -2)
+    container.Position = UDim2.new(0, 6, 0, 2)
+    container.BackgroundTransparency = 1
+    container.Parent = frame
+    
+    local layout = Instance.new("UIListLayout")
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    layout.VerticalAlignment = Enum.VerticalAlignment.Center
+    layout.Padding = UDim.new(0, 8)
+    layout.Parent = container
+    
+    local fpsLabel = Instance.new("TextLabel")
+    fpsLabel.Size = UDim2.new(0, 60, 1, 0)
+    fpsLabel.BackgroundTransparency = 1
+    fpsLabel.Text = "FPS: 60"
+    fpsLabel.TextColor3 = TEXT
+    fpsLabel.TextSize = 12
+    fpsLabel.Font = Enum.Font.GothamBold
+    fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
+    fpsLabel.Visible = options.ShowFPS ~= false
+    fpsLabel.Parent = container
+    
+    local pingLabel = Instance.new("TextLabel")
+    pingLabel.Size = UDim2.new(0, 80, 1, 0)
+    pingLabel.BackgroundTransparency = 1
+    pingLabel.Text = "PING: 0ms"
+    pingLabel.TextColor3 = TEXT
+    pingLabel.TextSize = 12
+    pingLabel.Font = Enum.Font.GothamBold
+    pingLabel.TextXAlignment = Enum.TextXAlignment.Left
+    pingLabel.Visible = options.ShowPing ~= false
+    pingLabel.Parent = container
+    
+    local timeLabel = Instance.new("TextLabel")
+    timeLabel.Size = UDim2.new(0, 70, 1, 0)
+    timeLabel.BackgroundTransparency = 1
+    timeLabel.Text = "00:00:00"
+    timeLabel.TextColor3 = TEXT
+    timeLabel.TextSize = 12
+    timeLabel.Font = Enum.Font.GothamBold
+    timeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    timeLabel.Visible = options.ShowTime ~= false
+    timeLabel.Parent = container
     
     Util:Drag(frame, frame)
     
@@ -258,20 +294,28 @@ function Library:CreateWatermark(options)
             lastUpdate = tick()
         end
         
-        local parts = {}
-        if options.ShowFPS ~= false then table.insert(parts, "FPS: " .. fps) end
+        if options.ShowFPS ~= false then
+            fpsLabel.Text = "FPS: " .. fps
+        end
+        
         if options.ShowPing ~= false then 
             local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
-            table.insert(parts, "PING: " .. ping .. "ms")
+            pingLabel.Text = "PING: " .. ping .. "ms"
         end
-        if options.ShowTime ~= false then table.insert(parts, os.date("%H:%M:%S")) end
         
-        text.Text = table.concat(parts, " | ")
+        if options.ShowTime ~= false then
+            timeLabel.Text = os.date("%H:%M:%S")
+        end
     end)
     
     return {
         SetVisible = function(v) frame.Visible = v end,
-        SetOptions = function(o) options = o end
+        SetOptions = function(o)
+            options = o
+            fpsLabel.Visible = o.ShowFPS ~= false
+            pingLabel.Visible = o.ShowPing ~= false
+            timeLabel.Visible = o.ShowTime ~= false
+        end
     }
 end
 
@@ -548,13 +592,15 @@ function Library:AddTab(name, icon)
     
     button.MouseEnter:Connect(function()
         if self.CurrentTab ~= name then
-            Util:Tween(button, {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}, 0.1)
+            Util:Tween(button, {BackgroundColor3 = Color3.fromRGB(28, 28, 28)}, 0.1)
+            Util:Tween(label, {TextColor3 = Color3.fromRGB(180, 180, 180)}, 0.1)
         end
     end)
     
     button.MouseLeave:Connect(function()
         if self.CurrentTab ~= name then
             Util:Tween(button, {BackgroundColor3 = BG3}, 0.1)
+            Util:Tween(label, {TextColor3 = TEXT_DIM}, 0.1)
         end
     end)
     
@@ -683,6 +729,14 @@ function Library:AddToggle(options)
     Util:AddCorner(toggle, 10)
     Util:AddStroke(toggle, BORDER)
     
+    local toggleGradient = Instance.new("UIGradient")
+    toggleGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 35))
+    }
+    toggleGradient.Rotation = 90
+    toggleGradient.Parent = toggle
+    
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 16, 0, 16)
     knob.Position = UDim2.new(0, 2, 0.5, -8)
@@ -704,9 +758,17 @@ function Library:AddToggle(options)
         
         if state then
             Util:Tween(toggle, {BackgroundColor3 = ACCENT}, 0.15)
+            toggleGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, ACCENT),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 100, 220))
+            }
             Util:Tween(knob, {Position = UDim2.new(1, -18, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.15)
         else
             Util:Tween(toggle, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.15)
+            toggleGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 35))
+            }
             Util:Tween(knob, {Position = UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(200, 200, 200)}, 0.15)
         end
         
@@ -1294,13 +1356,39 @@ end
 function Library:AddConfigTab()
     local tab = self:AddTab("Config", "")
     
-    local saveSection = tab:AddSection("Save Configuration", "left")
+    local configSection = tab:AddSection("Configuration", "left")
+    
+    local configList = {}
+    
+    local function getConfigs()
+        local configs = {}
+        if isfolder and isfile then
+            if isfolder("ClubConfigs") then
+                for _, file in pairs(listfiles("ClubConfigs")) do
+                    local name = file:gsub("ClubConfigs/", ""):gsub(".json", "")
+                    table.insert(configs, name)
+                end
+            end
+        end
+        return configs
+    end
+    
+    local selectedConfig = ""
+    
+    local configDropdown = configSection:AddDropdown({
+        Name = "Select Config",
+        Flag = "SelectedConfig",
+        List = getConfigs(),
+        Callback = function(value)
+            selectedConfig = value
+        end
+    })
     
     local nameBox = Instance.new("Frame")
     nameBox.Size = UDim2.new(1, 0, 0, 54)
     nameBox.BackgroundColor3 = BG3
     nameBox.BorderSizePixel = 0
-    nameBox.Parent = saveSection.Container
+    nameBox.Parent = configSection.Container
     
     Util:AddCorner(nameBox, 5)
     
@@ -1308,7 +1396,7 @@ function Library:AddConfigTab()
     nameLabel.Size = UDim2.new(1, -20, 0, 20)
     nameLabel.Position = UDim2.new(0, 12, 0, 5)
     nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = "Config Name"
+    nameLabel.Text = "New Config Name"
     nameLabel.TextColor3 = TEXT_DIM
     nameLabel.TextSize = 11
     nameLabel.Font = Enum.Font.Gotham
@@ -1321,7 +1409,7 @@ function Library:AddConfigTab()
     nameInput.BackgroundColor3 = BG1
     nameInput.BorderSizePixel = 0
     nameInput.Text = ""
-    nameInput.PlaceholderText = "Enter config name..."
+    nameInput.PlaceholderText = "Enter name..."
     nameInput.TextColor3 = TEXT
     nameInput.PlaceholderColor3 = TEXT_DIM
     nameInput.TextSize = 11
@@ -1332,54 +1420,134 @@ function Library:AddConfigTab()
     Util:AddCorner(nameInput, 4)
     Util:AddStroke(nameInput, BORDER)
     
-    local configName = ""
-    nameInput:GetPropertyChangedSignal("Text"):Connect(function()
-        configName = nameInput.Text
-    end)
+    local buttonContainer = Instance.new("Frame")
+    buttonContainer.Size = UDim2.new(1, 0, 0, 36)
+    buttonContainer.BackgroundTransparency = 1
+    buttonContainer.Parent = configSection.Container
+    
+    local buttonLayout = Instance.new("UIListLayout")
+    buttonLayout.FillDirection = Enum.FillDirection.Horizontal
+    buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    buttonLayout.Padding = UDim.new(0, 8)
+    buttonLayout.Parent = buttonContainer
     
     local saveBtn = Instance.new("TextButton")
-    saveBtn.Size = UDim2.new(1, 0, 0, 36)
+    saveBtn.Size = UDim2.new(0.48, 0, 1, 0)
     saveBtn.BackgroundColor3 = ACCENT
     saveBtn.BorderSizePixel = 0
-    saveBtn.Text = "Save Config"
+    saveBtn.Text = "Save"
     saveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     saveBtn.TextSize = 13
     saveBtn.Font = Enum.Font.GothamBold
     saveBtn.AutoButtonColor = false
-    saveBtn.Parent = saveSection.Container
+    saveBtn.Parent = buttonContainer
     
     Util:AddCorner(saveBtn, 6)
     
-    saveBtn.MouseButton1Click:Connect(function()
-        if configName ~= "" then
-            Library:SaveConfig(configName)
-        else
-            Library:Notify("Error", "Please enter a config name", 2)
-        end
-    end)
-    
-    local loadSection = tab:AddSection("Load Configuration", "right")
+    local saveGradient = Instance.new("UIGradient")
+    saveGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, ACCENT),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 100, 220))
+    }
+    saveGradient.Rotation = 90
+    saveGradient.Parent = saveBtn
     
     local loadBtn = Instance.new("TextButton")
-    loadBtn.Size = UDim2.new(1, 0, 0, 36)
-    loadBtn.BackgroundColor3 = ACCENT
+    loadBtn.Size = UDim2.new(0.48, 0, 1, 0)
+    loadBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
     loadBtn.BorderSizePixel = 0
-    loadBtn.Text = "Load Config"
+    loadBtn.Text = "Load"
     loadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     loadBtn.TextSize = 13
     loadBtn.Font = Enum.Font.GothamBold
     loadBtn.AutoButtonColor = false
-    loadBtn.Parent = loadSection.Container
+    loadBtn.Parent = buttonContainer
     
     Util:AddCorner(loadBtn, 6)
     
-    loadBtn.MouseButton1Click:Connect(function()
-        if configName ~= "" then
-            Library:LoadConfig(configName)
+    local loadGradient = Instance.new("UIGradient")
+    loadGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 180, 100)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 160, 90))
+    }
+    loadGradient.Rotation = 90
+    loadGradient.Parent = loadBtn
+    
+    local deleteBtn = Instance.new("TextButton")
+    deleteBtn.Size = UDim2.new(1, 0, 0, 36)
+    deleteBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+    deleteBtn.BorderSizePixel = 0
+    deleteBtn.Text = "Delete"
+    deleteBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    deleteBtn.TextSize = 13
+    deleteBtn.Font = Enum.Font.GothamBold
+    deleteBtn.AutoButtonColor = false
+    deleteBtn.Parent = configSection.Container
+    
+    Util:AddCorner(deleteBtn, 6)
+    
+    local deleteGradient = Instance.new("UIGradient")
+    deleteGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 60, 60)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 50, 50))
+    }
+    deleteGradient.Rotation = 90
+    deleteGradient.Parent = deleteBtn
+    
+    saveBtn.MouseButton1Click:Connect(function()
+        local name = nameInput.Text
+        if name ~= "" then
+            Library:SaveConfig(name)
+            configDropdown:Refresh(getConfigs())
+            nameInput.Text = ""
         else
             Library:Notify("Error", "Please enter a config name", 2)
         end
     end)
+    
+    loadBtn.MouseButton1Click:Connect(function()
+        if selectedConfig ~= "" then
+            Library:LoadConfig(selectedConfig)
+        else
+            Library:Notify("Error", "Please select a config to load", 2)
+        end
+    end)
+    
+    deleteBtn.MouseButton1Click:Connect(function()
+        if selectedConfig ~= "" then
+            if isfile and delfile then
+                delfile("ClubConfigs/" .. selectedConfig .. ".json")
+                Library:Notify("Success", "Config deleted successfully", 2)
+                configDropdown:Refresh(getConfigs())
+                selectedConfig = ""
+            end
+        else
+            Library:Notify("Error", "Please select a config to delete", 2)
+        end
+    end)
+    
+    local settingsSection = tab:AddSection("Settings", "right")
+    
+    settingsSection:AddToggle({
+        Name = "Auto Load Config",
+        Flag = "AutoLoadConfig",
+        Default = false,
+        Callback = function(value)
+            print("Auto Load Config:", value)
+        end
+    })
+    
+    settingsSection:AddKeybind({
+        Name = "Toggle UI",
+        Flag = "ToggleUIKeybind",
+        Default = Enum.KeyCode.RightShift,
+        Mode = "Toggle",
+        Callback = function(active, key)
+            if active then
+                Library.Gui.Enabled = not Library.Gui.Enabled
+            end
+        end
+    })
     
     return tab
 end
