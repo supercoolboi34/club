@@ -898,6 +898,78 @@ function Library:AddButton(options)
     return button
 end
 
+function Library:AddInput(options)
+    options = options or {}
+    local name = options.Name or "Input"
+    local default = options.Default or ""
+    local placeholder = options.Placeholder or "Enter text..."
+    local flag = options.Flag
+    local callback = options.Callback or function() end
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 52)
+    frame.BackgroundColor3 = Theme.BG3
+    frame.BorderSizePixel = 0
+    frame.Parent = self.Container
+    
+    Util:AddCorner(frame, 5)
+    Util:AddStroke(frame, Theme.Border, 1)
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -16, 0, 18)
+    label.Position = UDim2.new(0, 10, 0, 5)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Theme.TextDim
+    label.TextSize = 11
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(1, -20, 0, 24)
+    input.Position = UDim2.new(0, 10, 0, 24)
+    input.BackgroundColor3 = Theme.BG1
+    input.BorderSizePixel = 0
+    input.Text = default
+    input.PlaceholderText = placeholder
+    input.TextColor3 = Theme.Text
+    input.PlaceholderColor3 = Theme.TextDim
+    input.TextSize = 11
+    input.Font = Enum.Font.Gotham
+    input.ClearTextOnFocus = false
+    input.Parent = frame
+    
+    local inputPadding = Instance.new("UIPadding")
+    inputPadding.PaddingLeft = UDim.new(0, 8)
+    inputPadding.PaddingRight = UDim.new(0, 8)
+    inputPadding.Parent = input
+    
+    Util:AddCorner(input, 4)
+    Util:AddStroke(input, Theme.Border, 1)
+    
+    if flag then
+        Library.Flags[flag] = default
+        Library.Callbacks[flag] = callback
+    end
+    
+    input:GetPropertyChangedSignal("Text"):Connect(function()
+        if flag then
+            Library.Flags[flag] = input.Text
+        end
+        callback(input.Text)
+    end)
+    
+    return {
+        SetValue = function(v)
+            input.Text = v
+            if flag then Library.Flags[flag] = v end
+            callback(v)
+        end,
+        GetValue = function() return input.Text end
+    }
+end
+
 function Library:AddSlider(options)
     options = options or {}
     local name = options.Name or "Slider"
@@ -1105,59 +1177,61 @@ function Library:AddToggle(options)
         end
     end)
     
-    frame.MouseButton2Click:Connect(function()
-        local menu = Instance.new("Frame")
-        menu.Size = UDim2.new(0, 100, 0, 0)
-        menu.Position = UDim2.new(0, frame.AbsolutePosition.X, 0, frame.AbsolutePosition.Y + 35)
-        menu.BackgroundColor3 = Theme.BG2
-        menu.BorderSizePixel = 0
-        menu.ZIndex = 100
-        menu.Parent = Library.Gui
-        
-        Util:AddCorner(menu, 4)
-        Util:AddStroke(menu, Theme.Accent, 1)
-        
-        local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0, 2)
-        layout.Parent = menu
-        
-        local modes = {"Toggle", "Hold", "Always"}
-        for _, m in ipairs(modes) do
-            local opt = Instance.new("TextButton")
-            opt.Size = UDim2.new(1, 0, 0, 22)
-            opt.BackgroundColor3 = Theme.BG2
-            opt.BorderSizePixel = 0
-            opt.Text = m
-            opt.TextColor3 = Theme.Text
-            opt.TextSize = 11
-            opt.Font = Enum.Font.Gotham
-            opt.AutoButtonColor = false
-            opt.ZIndex = 101
-            opt.Parent = menu
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            local menu = Instance.new("Frame")
+            menu.Size = UDim2.new(0, 100, 0, 0)
+            menu.Position = UDim2.new(0, frame.AbsolutePosition.X, 0, frame.AbsolutePosition.Y + 35)
+            menu.BackgroundColor3 = Theme.BG2
+            menu.BorderSizePixel = 0
+            menu.ZIndex = 100
+            menu.Parent = Library.Gui
             
-            opt.MouseEnter:Connect(function()
-                Util:Tween(opt, {BackgroundColor3 = Theme.BG3}, 0.1)
+            Util:AddCorner(menu, 4)
+            Util:AddStroke(menu, Theme.Accent, 1)
+            
+            local layout = Instance.new("UIListLayout")
+            layout.Padding = UDim.new(0, 2)
+            layout.Parent = menu
+            
+            local modes = {"Toggle", "Hold", "Always"}
+            for _, m in ipairs(modes) do
+                local opt = Instance.new("TextButton")
+                opt.Size = UDim2.new(1, 0, 0, 22)
+                opt.BackgroundColor3 = Theme.BG2
+                opt.BorderSizePixel = 0
+                opt.Text = m
+                opt.TextColor3 = Theme.Text
+                opt.TextSize = 11
+                opt.Font = Enum.Font.Gotham
+                opt.AutoButtonColor = false
+                opt.ZIndex = 101
+                opt.Parent = menu
+                
+                opt.MouseEnter:Connect(function()
+                    Util:Tween(opt, {BackgroundColor3 = Theme.BG3}, 0.1)
+                end)
+                
+                opt.MouseLeave:Connect(function()
+                    Util:Tween(opt, {BackgroundColor3 = Theme.BG2}, 0.1)
+                end)
+                
+                opt.MouseButton1Click:Connect(function()
+                    mode = m
+                    if m == "Always" then set(true) end
+                    Library:Notify("Mode", "Set to " .. m, 1)
+                    menu:Destroy()
+                end)
+            end
+            
+            layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                menu.Size = UDim2.new(0, 100, 0, layout.AbsoluteContentSize.Y + 4)
             end)
             
-            opt.MouseLeave:Connect(function()
-                Util:Tween(opt, {BackgroundColor3 = Theme.BG2}, 0.1)
-            end)
-            
-            opt.MouseButton1Click:Connect(function()
-                mode = m
-                if m == "Always" then set(true) end
-                Library:Notify("Mode", "Set to " .. m, 1)
-                menu:Destroy()
+            task.delay(3, function()
+                if menu.Parent then menu:Destroy() end
             end)
         end
-        
-        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            menu.Size = UDim2.new(0, 100, 0, layout.AbsoluteContentSize.Y + 4)
-        end)
-        
-        task.delay(3, function()
-            if menu.Parent then menu:Destroy() end
-        end)
     end)
     
     return {
@@ -1369,6 +1443,232 @@ function Library:AddDropdown(options)
     }
 end
 
+function Library:AddMultiDropdown(options)
+    options = options or {}
+    local name = options.Name or "Multi Dropdown"
+    local list = options.List or {}
+    local default = options.Default or {}
+    local flag = options.Flag
+    local callback = options.Callback or function() end
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 52)
+    frame.BackgroundColor3 = Theme.BG3
+    frame.BorderSizePixel = 0
+    frame.Parent = self.Container
+    frame.ZIndex = 5
+    
+    Util:AddCorner(frame, 5)
+    Util:AddStroke(frame, Theme.Border, 1)
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -16, 0, 18)
+    label.Position = UDim2.new(0, 10, 0, 5)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Theme.TextDim
+    label.TextSize = 11
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 6
+    label.Parent = frame
+    
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, -20, 0, 24)
+    button.Position = UDim2.new(0, 10, 0, 24)
+    button.BackgroundColor3 = Theme.BG1
+    button.BorderSizePixel = 0
+    button.Text = ""
+    button.AutoButtonColor = false
+    button.ZIndex = 7
+    button.Parent = frame
+    
+    Util:AddCorner(button, 4)
+    Util:AddStroke(button, Theme.Border, 1)
+    
+    local selected = Instance.new("TextLabel")
+    selected.Size = UDim2.new(1, -32, 1, 0)
+    selected.Position = UDim2.new(0, 8, 0, 0)
+    selected.BackgroundTransparency = 1
+    selected.Text = "Select..."
+    selected.TextColor3 = Theme.Text
+    selected.TextSize = 11
+    selected.Font = Enum.Font.Gotham
+    selected.TextXAlignment = Enum.TextXAlignment.Left
+    selected.TextTruncate = Enum.TextTruncate.AtEnd
+    selected.ZIndex = 8
+    selected.Parent = button
+    
+    local arrow = Instance.new("TextLabel")
+    arrow.Size = UDim2.new(0, 20, 1, 0)
+    arrow.Position = UDim2.new(1, -22, 0, 0)
+    arrow.BackgroundTransparency = 1
+    arrow.Text = "▼"
+    arrow.TextColor3 = Theme.TextDim
+    arrow.TextSize = 9
+    arrow.Font = Enum.Font.GothamBold
+    arrow.ZIndex = 8
+    arrow.Parent = button
+    
+    local dropdown = Instance.new("Frame")
+    dropdown.Size = UDim2.new(1, -20, 0, 0)
+    dropdown.Position = UDim2.new(0, 10, 1, 4)
+    dropdown.BackgroundColor3 = Theme.BG1
+    dropdown.BorderSizePixel = 0
+    dropdown.Visible = false
+    dropdown.ZIndex = 150
+    dropdown.ClipsDescendants = true
+    dropdown.Parent = frame
+    
+    Util:AddCorner(dropdown, 4)
+    Util:AddStroke(dropdown, Theme.Accent, 1)
+    
+    local dropContainer = Instance.new("ScrollingFrame")
+    dropContainer.Size = UDim2.new(1, 0, 1, 0)
+    dropContainer.BackgroundTransparency = 1
+    dropContainer.BorderSizePixel = 0
+    dropContainer.ScrollBarThickness = 3
+    dropContainer.ScrollBarImageColor3 = Theme.Accent
+    dropContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+    dropContainer.ZIndex = 151
+    dropContainer.Parent = dropdown
+    
+    local dropLayout = Instance.new("UIListLayout")
+    dropLayout.Padding = UDim.new(0, 1)
+    dropLayout.Parent = dropContainer
+    
+    local values = {}
+    for _, v in pairs(default) do
+        values[v] = true
+    end
+    
+    local open = false
+    
+    if flag then
+        Library.Flags[flag] = values
+        Library.Callbacks[flag] = callback
+    end
+    
+    local function updateLabel()
+        local sel = {}
+        for k, v in pairs(values) do
+            if v then table.insert(sel, k) end
+        end
+        selected.Text = #sel > 0 and table.concat(sel, ", ") or "Select..."
+    end
+    
+    local function refresh(newList)
+        for _, child in pairs(dropContainer:GetChildren()) do
+            if child:IsA("Frame") then
+                child:Destroy()
+            end
+        end
+        
+        for _, item in pairs(newList) do
+            local option = Instance.new("Frame")
+            option.Size = UDim2.new(1, 0, 0, 24)
+            option.BackgroundColor3 = Theme.BG1
+            option.BorderSizePixel = 0
+            option.ZIndex = 152
+            option.Parent = dropContainer
+            
+            local optButton = Instance.new("TextButton")
+            optButton.Size = UDim2.new(1, -28, 1, 0)
+            optButton.Position = UDim2.new(0, 8, 0, 0)
+            optButton.BackgroundTransparency = 1
+            optButton.Text = item
+            optButton.TextColor3 = Theme.Text
+            optButton.TextSize = 11
+            optButton.Font = Enum.Font.Gotham
+            optButton.TextXAlignment = Enum.TextXAlignment.Left
+            optButton.AutoButtonColor = false
+            optButton.ZIndex = 153
+            optButton.Parent = option
+            
+            local check = Instance.new("Frame")
+            check.Size = UDim2.new(0, 14, 0, 14)
+            check.Position = UDim2.new(1, -20, 0.5, -7)
+            check.BackgroundColor3 = Theme.BG3
+            check.BorderSizePixel = 0
+            check.ZIndex = 153
+            check.Parent = option
+            
+            Util:AddCorner(check, 3)
+            Util:AddStroke(check, Theme.Border, 1)
+            
+            local checkmark = Instance.new("ImageLabel")
+            checkmark.Size = UDim2.new(0, 10, 0, 10)
+            checkmark.Position = UDim2.new(0.5, -5, 0.5, -5)
+            checkmark.BackgroundTransparency = 1
+            checkmark.Image = "rbxassetid://3926305904"
+            checkmark.ImageRectOffset = Vector2.new(312, 4)
+            checkmark.ImageRectSize = Vector2.new(24, 24)
+            checkmark.ImageColor3 = Theme.Accent
+            checkmark.Visible = values[item] or false
+            checkmark.ZIndex = 154
+            checkmark.Parent = check
+            
+            optButton.MouseEnter:Connect(function()
+                Util:Tween(option, {BackgroundColor3 = Theme.BG3}, 0.1)
+            end)
+            
+            optButton.MouseLeave:Connect(function()
+                Util:Tween(option, {BackgroundColor3 = Theme.BG1}, 0.1)
+            end)
+            
+            optButton.MouseButton1Click:Connect(function()
+                values[item] = not values[item]
+                checkmark.Visible = values[item]
+                
+                if flag then
+                    Library.Flags[flag] = values
+                end
+                
+                updateLabel()
+                callback(values)
+            end)
+        end
+        
+        dropLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            dropContainer.CanvasSize = UDim2.new(0, 0, 0, dropLayout.AbsoluteContentSize.Y)
+        end)
+    end
+    
+    button.MouseButton1Click:Connect(function()
+        open = not open
+        
+        if open then
+            dropdown.Visible = true
+            local height = math.min(dropLayout.AbsoluteContentSize.Y, 120)
+            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, height)}, 0.15)
+            arrow.Text = "▲"
+            dropdown.ZIndex = 150
+            frame.ZIndex = 150
+        else
+            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, 0)}, 0.15)
+            task.wait(0.15)
+            dropdown.Visible = false
+            arrow.Text = "▼"
+            dropdown.ZIndex = 5
+            frame.ZIndex = 5
+        end
+    end)
+    
+    refresh(list)
+    updateLabel()
+    
+    return {
+        Refresh = refresh,
+        SetValue = function(v)
+            values = v
+            updateLabel()
+            if flag then Library.Flags[flag] = v end
+            callback(v)
+        end,
+        GetValue = function() return values end
+    }
+end
+
 function Library:AddKeybind(options)
     options = options or {}
     local name = options.Name or "Keybind"
@@ -1531,60 +1831,62 @@ function Library:AddKeybind(options)
         end
     end)
     
-    frame.MouseButton2Click:Connect(function()
-        local menu = Instance.new("Frame")
-        menu.Size = UDim2.new(0, 100, 0, 0)
-        menu.Position = UDim2.new(0, frame.AbsolutePosition.X, 0, frame.AbsolutePosition.Y + 35)
-        menu.BackgroundColor3 = Theme.BG2
-        menu.BorderSizePixel = 0
-        menu.ZIndex = 100
-        menu.Parent = Library.Gui
-        
-        Util:AddCorner(menu, 4)
-        Util:AddStroke(menu, Theme.Accent, 1)
-        
-        local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0, 2)
-        layout.Parent = menu
-        
-        local modes = {"Toggle", "Hold"}
-        for _, m in ipairs(modes) do
-            local opt = Instance.new("TextButton")
-            opt.Size = UDim2.new(1, 0, 0, 22)
-            opt.BackgroundColor3 = Theme.BG2
-            opt.BorderSizePixel = 0
-            opt.Text = m
-            opt.TextColor3 = Theme.Text
-            opt.TextSize = 11
-            opt.Font = Enum.Font.Gotham
-            opt.AutoButtonColor = false
-            opt.ZIndex = 101
-            opt.Parent = menu
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            local menu = Instance.new("Frame")
+            menu.Size = UDim2.new(0, 100, 0, 0)
+            menu.Position = UDim2.new(0, frame.AbsolutePosition.X, 0, frame.AbsolutePosition.Y + 35)
+            menu.BackgroundColor3 = Theme.BG2
+            menu.BorderSizePixel = 0
+            menu.ZIndex = 100
+            menu.Parent = Library.Gui
             
-            opt.MouseEnter:Connect(function()
-                Util:Tween(opt, {BackgroundColor3 = Theme.BG3}, 0.1)
+            Util:AddCorner(menu, 4)
+            Util:AddStroke(menu, Theme.Accent, 1)
+            
+            local layout = Instance.new("UIListLayout")
+            layout.Padding = UDim.new(0, 2)
+            layout.Parent = menu
+            
+            local modes = {"Toggle", "Hold"}
+            for _, m in ipairs(modes) do
+                local opt = Instance.new("TextButton")
+                opt.Size = UDim2.new(1, 0, 0, 22)
+                opt.BackgroundColor3 = Theme.BG2
+                opt.BorderSizePixel = 0
+                opt.Text = m
+                opt.TextColor3 = Theme.Text
+                opt.TextSize = 11
+                opt.Font = Enum.Font.Gotham
+                opt.AutoButtonColor = false
+                opt.ZIndex = 101
+                opt.Parent = menu
+                
+                opt.MouseEnter:Connect(function()
+                    Util:Tween(opt, {BackgroundColor3 = Theme.BG3}, 0.1)
+                end)
+                
+                opt.MouseLeave:Connect(function()
+                    Util:Tween(opt, {BackgroundColor3 = Theme.BG2}, 0.1)
+                end)
+                
+                opt.MouseButton1Click:Connect(function()
+                    mode = m
+                    modeLabel.Text = m:sub(1, 1)
+                    if flag then Library.Flags[flag].Mode = m end
+                    Library:Notify("Mode", "Set to " .. m, 1)
+                    menu:Destroy()
+                end)
+            end
+            
+            layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                menu.Size = UDim2.new(0, 100, 0, layout.AbsoluteContentSize.Y + 4)
             end)
             
-            opt.MouseLeave:Connect(function()
-                Util:Tween(opt, {BackgroundColor3 = Theme.BG2}, 0.1)
-            end)
-            
-            opt.MouseButton1Click:Connect(function()
-                mode = m
-                modeLabel.Text = m:sub(1, 1)
-                if flag then Library.Flags[flag].Mode = m end
-                Library:Notify("Mode", "Set to " .. m, 1)
-                menu:Destroy()
+            task.delay(3, function()
+                if menu.Parent then menu:Destroy() end
             end)
         end
-        
-        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            menu.Size = UDim2.new(0, 100, 0, layout.AbsoluteContentSize.Y + 4)
-        end)
-        
-        task.delay(3, function()
-            if menu.Parent then menu:Destroy() end
-        end)
     end)
     
     return {
