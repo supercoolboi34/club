@@ -59,8 +59,8 @@ end
 function Util:Resize(frame, glowIndicator)
     local resizing, startPos, startSize
     local handle = Instance.new("Frame")
-    handle.Size = UDim2.new(0, 15, 0, 15)
-    handle.Position = UDim2.new(1, -15, 1, -15)
+    handle.Size = UDim2.new(0, 20, 0, 20)
+    handle.Position = UDim2.new(1, -20, 1, -20)
     handle.BackgroundTransparency = 1
     handle.Parent = frame
     
@@ -307,8 +307,8 @@ function Library:Create(options)
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
     local main = Instance.new("Frame")
-    main.Size = UDim2.new(0, 650, 0, 450)
-    main.Position = UDim2.new(0.5, -325, 0.5, -225)
+    main.Size = UDim2.new(0, 750, 0, 500)
+    main.Position = UDim2.new(0.5, -375, 0.5, -250)
     main.BackgroundColor3 = BG1
     main.BorderSizePixel = 0
     main.ClipsDescendants = true
@@ -361,7 +361,7 @@ function Library:Create(options)
     title.BackgroundTransparency = 1
     title.Text = name
     title.TextColor3 = TEXT
-    title.TextSize = 16
+    title.TextSize = 18
     title.Font = Enum.Font.GothamBold
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = topbar
@@ -616,10 +616,10 @@ function Library:AddSection(name, side)
     padding.PaddingBottom = UDim.new(0, 8)
     padding.Parent = container
     
-    return {
+    return setmetatable({
         Frame = section,
         Container = container
-    }
+    }, {__index = self})
 end
 
 function Library:AddToggle(options)
