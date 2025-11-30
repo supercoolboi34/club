@@ -11,19 +11,28 @@ local HttpService = game:GetService("HttpService")
 -- Theme System
 local Theme = {
     Accent = Color3.fromRGB(120, 120, 255),
+    AccentDark = Color3.fromRGB(80, 80, 200),
     BG1 = Color3.fromRGB(15, 15, 15),
     BG2 = Color3.fromRGB(20, 20, 20),
     BG3 = Color3.fromRGB(25, 25, 25),
     Text = Color3.fromRGB(240, 240, 240),
     TextDim = Color3.fromRGB(160, 160, 160),
     Border = Color3.fromRGB(40, 40, 40),
-    Shadow = Color3.fromRGB(0, 0, 0)
+    Shadow = Color3.fromRGB(0, 0, 0),
+    Success = Color3.fromRGB(100, 255, 100),
+    Warning = Color3.fromRGB(255, 200, 100),
+    Error = Color3.fromRGB(255, 100, 100)
 }
 
 local Util = {}
 
-function Util:Tween(obj, props, time)
-    TweenService:Create(obj, TweenInfo.new(time or 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
+function Util:Tween(obj, props, time, style, direction)
+    local tweenInfo = TweenInfo.new(
+        time or 0.15,
+        style or Enum.EasingStyle.Quad,
+        direction or Enum.EasingDirection.Out
+    )
+    TweenService:Create(obj, tweenInfo, props):Play()
 end
 
 function Util:Drag(frame, handle)
@@ -52,23 +61,26 @@ function Util:Drag(frame, handle)
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
+            Util:Tween(frame, {
+                Position = UDim2.new(
+                    startPos.X.Scale, startPos.X.Offset + delta.X,
+                    startPos.Y.Scale, startPos.Y.Offset + delta.Y
+                )
+            }, 0.1, Enum.EasingStyle.Linear)
         end
     end)
 end
 
-function Util:Resize(frame, indicator)
+function Util:Resize(frame)
     local resizing, startPos, startSize
     local handle = Instance.new("Frame")
     handle.Size = UDim2.new(0, 30, 0, 30)
     handle.Position = UDim2.new(1, -30, 1, -30)
     handle.BackgroundTransparency = 1
+    handle.ZIndex = 10
     handle.Parent = frame
     
-    -- Triangle indicator
+    -- Triangle indicator with gradient
     local triangle = Instance.new("ImageLabel")
     triangle.Size = UDim2.new(0, 20, 0, 20)
     triangle.Position = UDim2.new(1, -22, 1, -22)
@@ -77,11 +89,30 @@ function Util:Resize(frame, indicator)
     triangle.ImageColor3 = Theme.Accent
     triangle.ImageTransparency = 0.7
     triangle.Rotation = 90
-    triangle.ZIndex = 10
+    triangle.ZIndex = 11
     triangle.Parent = frame
     
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Theme.Accent),
+        ColorSequenceKeypoint.new(1, Theme.AccentDark)
+    }
+    gradient.Rotation = 45
+    gradient.Parent = triangle
+    
+    -- Animate gradient
+    task.spawn(function()
+        while triangle.Parent do
+            for i = 0, 360, 5 do
+                if not triangle.Parent then break end
+                gradient.Rotation = i
+                task.wait(0.03)
+            end
+        end
+    end)
+    
     handle.MouseEnter:Connect(function()
-        Util:Tween(triangle, {ImageTransparency = 0.3}, 0.2)
+        Util:Tween(triangle, {ImageTransparency = 0.2}, 0.2)
     end)
     
     handle.MouseLeave:Connect(function()
@@ -113,10 +144,11 @@ function Util:Resize(frame, indicator)
     end)
 end
 
-function Util:AddStroke(obj, color, thickness)
+function Util:AddStroke(obj, color, thickness, transparency)
     local stroke = Instance.new("UIStroke")
     stroke.Color = color or Theme.Border
     stroke.Thickness = thickness or 1
+    stroke.Transparency = transparency or 0
     stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     stroke.Parent = obj
     return stroke
@@ -129,7 +161,7 @@ function Util:AddCorner(obj, radius)
     return corner
 end
 
-function Util:AddShadow(obj)
+function Util:AddShadow(obj, transparency)
     local shadow = Instance.new("ImageLabel")
     shadow.Name = "Shadow"
     shadow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -138,7 +170,7 @@ function Util:AddShadow(obj)
     shadow.BackgroundTransparency = 1
     shadow.Image = "rbxassetid://1316045217"
     shadow.ImageColor3 = Theme.Shadow
-    shadow.ImageTransparency = 0.85
+    shadow.ImageTransparency = transparency or 0.85
     shadow.ScaleType = Enum.ScaleType.Slice
     shadow.SliceCenter = Rect.new(10, 10, 118, 118)
     shadow.ZIndex = obj.ZIndex - 1
@@ -146,12 +178,68 @@ function Util:AddShadow(obj)
     return shadow
 end
 
+function Util:AddGradient(obj, color1, color2, rotation)
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, color1 or Theme.Accent),
+        ColorSequenceKeypoint.new(1, color2 or Theme.AccentDark)
+    }
+    gradient.Rotation = rotation or 90
+    gradient.Parent = obj
+    return gradient
+end
+
+function Util:AnimateGradient(gradient, speed)
+    task.spawn(function()
+        while gradient.Parent do
+            for i = 0, 360, speed or 2 do
+                if not gradient.Parent then break end
+                gradient.Rotation = i
+                task.wait(0.03)
+            end
+        end
+    end)
+end
+
+function Util:CreateGlow(obj, color, transparency)
+    local glow = Instance.new("ImageLabel")
+    glow.Name = "Glow"
+    glow.Size = UDim2.new(1, 30, 1, 30)
+    glow.Position = UDim2.new(0.5, 0, 0.5, 0)
+    glow.AnchorPoint = Vector2.new(0.5, 0.5)
+    glow.BackgroundTransparency = 1
+    glow.Image = "rbxassetid://1316045217"
+    glow.ImageColor3 = color or Theme.Accent
+    glow.ImageTransparency = transparency or 0.9
+    glow.ScaleType = Enum.ScaleType.Slice
+    glow.SliceCenter = Rect.new(10, 10, 118, 118)
+    glow.ZIndex = obj.ZIndex - 1
+    glow.Parent = obj
+    return glow
+end
+
+function Util:PulseGlow(glow, minTrans, maxTrans, speed)
+    task.spawn(function()
+        local increasing = false
+        while glow.Parent do
+            if increasing then
+                Util:Tween(glow, {ImageTransparency = minTrans or 0.6}, speed or 1, Enum.EasingStyle.Sine)
+            else
+                Util:Tween(glow, {ImageTransparency = maxTrans or 0.9}, speed or 1, Enum.EasingStyle.Sine)
+            end
+            increasing = not increasing
+            task.wait(speed or 1)
+        end
+    end)
+end
+
 Library.Flags = {}
 Library.Callbacks = {}
 Library.ConfigFile = ""
 Library.ActiveKeybinds = {}
+Library.ColorPickers = {}
 
-function Library:Notify(title, text, duration)
+function Library:Notify(title, text, duration, notifType)
     local gui = Instance.new("ScreenGui")
     gui.Name = "Notification"
     gui.Parent = CoreGui
@@ -164,52 +252,67 @@ function Library:Notify(title, text, duration)
     frame.BackgroundColor3 = Theme.BG2
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = false
+    frame.ZIndex = 200
     frame.Parent = gui
     
     Util:AddCorner(frame, 6)
-    Util:AddStroke(frame, Theme.Accent, 1)
     
-    local glow = Instance.new("ImageLabel")
-    glow.Size = UDim2.new(1, 10, 1, 10)
-    glow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    glow.AnchorPoint = Vector2.new(0.5, 0.5)
-    glow.BackgroundTransparency = 1
-    glow.Image = "rbxassetid://1316045217"
-    glow.ImageColor3 = Theme.Accent
-    glow.ImageTransparency = 0.9
-    glow.ScaleType = Enum.ScaleType.Slice
-    glow.SliceCenter = Rect.new(10, 10, 118, 118)
-    glow.ZIndex = frame.ZIndex - 1
-    glow.Parent = frame
+    local accentColor = Theme.Accent
+    if notifType == "success" then
+        accentColor = Theme.Success
+    elseif notifType == "warning" then
+        accentColor = Theme.Warning
+    elseif notifType == "error" then
+        accentColor = Theme.Error
+    end
+    
+    local stroke = Util:AddStroke(frame, accentColor, 1.5)
+    
+    local glow = Util:CreateGlow(frame, accentColor, 0.9)
     
     local iconFrame = Instance.new("Frame")
     iconFrame.Size = UDim2.new(0, 40, 1, 0)
-    iconFrame.BackgroundColor3 = Theme.Accent
+    iconFrame.BackgroundColor3 = accentColor
     iconFrame.BorderSizePixel = 0
+    iconFrame.ZIndex = 201
     iconFrame.Parent = frame
     
     Util:AddCorner(iconFrame, 6)
+    Util:AddGradient(iconFrame, accentColor, Color3.fromRGB(
+        math.max(0, accentColor.R * 255 - 30),
+        math.max(0, accentColor.G * 255 - 30),
+        math.max(0, accentColor.B * 255 - 30)
+    ), 90)
     
     local iconCover = Instance.new("Frame")
     iconCover.Size = UDim2.new(0, 10, 1, 0)
     iconCover.Position = UDim2.new(1, -10, 0, 0)
-    iconCover.BackgroundColor3 = Theme.Accent
+    iconCover.BackgroundColor3 = accentColor
     iconCover.BorderSizePixel = 0
+    iconCover.ZIndex = 201
     iconCover.Parent = iconFrame
+    
+    local iconText = "!"
+    if notifType == "success" then iconText = "✓"
+    elseif notifType == "warning" then iconText = "⚠"
+    elseif notifType == "error" then iconText = "✕"
+    end
     
     local icon = Instance.new("TextLabel")
     icon.Size = UDim2.new(1, 0, 1, 0)
     icon.BackgroundTransparency = 1
-    icon.Text = "!"
+    icon.Text = iconText
     icon.TextColor3 = Color3.fromRGB(255, 255, 255)
     icon.TextSize = 18
     icon.Font = Enum.Font.GothamBold
+    icon.ZIndex = 202
     icon.Parent = iconFrame
     
     local content = Instance.new("Frame")
     content.Size = UDim2.new(1, -50, 1, 0)
     content.Position = UDim2.new(0, 45, 0, 0)
     content.BackgroundTransparency = 1
+    content.ZIndex = 201
     content.Parent = frame
     
     local titleLabel = Instance.new("TextLabel")
@@ -221,6 +324,7 @@ function Library:Notify(title, text, duration)
     titleLabel.TextSize = 13
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.ZIndex = 202
     titleLabel.Parent = content
     
     local textLabel = Instance.new("TextLabel")
@@ -235,27 +339,19 @@ function Library:Notify(title, text, duration)
     textLabel.TextYAlignment = Enum.TextYAlignment.Top
     textLabel.TextWrapped = true
     textLabel.AutomaticSize = Enum.AutomaticSize.Y
+    textLabel.ZIndex = 202
     textLabel.Parent = content
     
     task.wait()
     local textHeight = textLabel.AbsoluteSize.Y
     local totalHeight = math.max(60, 45 + textHeight)
     
-    Util:Tween(frame, {Size = UDim2.new(0, 300, 0, totalHeight)}, 0.3)
+    Util:Tween(frame, {Size = UDim2.new(0, 300, 0, totalHeight)}, 0.3, Enum.EasingStyle.Back)
     
-    task.spawn(function()
-        for i = 0, 1, 0.05 do
-            glow.ImageTransparency = 0.9 - (i * 0.3)
-            task.wait(0.02)
-        end
-        for i = 0, 1, 0.05 do
-            glow.ImageTransparency = 0.6 + (i * 0.3)
-            task.wait(0.02)
-        end
-    end)
+    Util:PulseGlow(glow, 0.6, 0.9, 0.8)
     
     task.delay(duration or 3, function()
-        Util:Tween(frame, {Size = UDim2.new(0, 0, 0, 0)}, 0.3)
+        Util:Tween(frame, {Size = UDim2.new(0, 0, 0, 0)}, 0.3, Enum.EasingStyle.Back)
         task.wait(0.3)
         gui:Destroy()
     end)
@@ -267,6 +363,7 @@ function Library:CreateWatermark(options)
     local gui = Instance.new("ScreenGui")
     gui.Name = "Watermark"
     gui.Parent = CoreGui
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 10, 0, 30)
@@ -274,6 +371,7 @@ function Library:CreateWatermark(options)
     frame.BackgroundColor3 = Theme.BG2
     frame.BorderSizePixel = 0
     frame.Visible = false
+    frame.ZIndex = 100
     frame.Parent = gui
     
     Util:AddCorner(frame, 5)
@@ -283,12 +381,17 @@ function Library:CreateWatermark(options)
     accent.Size = UDim2.new(1, 0, 0, 2)
     accent.BackgroundColor3 = Theme.Accent
     accent.BorderSizePixel = 0
+    accent.ZIndex = 101
     accent.Parent = frame
+    
+    local accentGradient = Util:AddGradient(accent, Theme.Accent, Theme.AccentDark, 0)
+    Util:AnimateGradient(accentGradient, 3)
     
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -16, 1, -6)
     container.Position = UDim2.new(0, 8, 0, 4)
     container.BackgroundTransparency = 1
+    container.ZIndex = 101
     container.Parent = frame
     
     local layout = Instance.new("UIListLayout")
@@ -311,6 +414,7 @@ function Library:CreateWatermark(options)
         label.Font = Enum.Font.GothamBold
         label.TextXAlignment = Enum.TextXAlignment.Left
         label.Visible = visible or false
+        label.ZIndex = 102
         label.Parent = container
         return label
     end
@@ -392,6 +496,7 @@ function Library:CreateKeybindList()
     local gui = Instance.new("ScreenGui")
     gui.Name = "KeybindList"
     gui.Parent = CoreGui
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 200, 0, 38)
@@ -399,6 +504,7 @@ function Library:CreateKeybindList()
     frame.BackgroundColor3 = Theme.BG2
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = false
+    frame.ZIndex = 100
     frame.Parent = gui
     
     Util:AddCorner(frame, 5)
@@ -408,7 +514,11 @@ function Library:CreateKeybindList()
     accent.Size = UDim2.new(1, 0, 0, 2)
     accent.BackgroundColor3 = Theme.Accent
     accent.BorderSizePixel = 0
+    accent.ZIndex = 101
     accent.Parent = frame
+    
+    local accentGradient = Util:AddGradient(accent, Theme.Accent, Theme.AccentDark, 0)
+    Util:AnimateGradient(accentGradient, 3)
     
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, -20, 0, 28)
@@ -419,6 +529,7 @@ function Library:CreateKeybindList()
     title.TextSize = 13
     title.Font = Enum.Font.GothamBold
     title.TextXAlignment = Enum.TextXAlignment.Left
+    title.ZIndex = 101
     title.Parent = frame
     
     local container = Instance.new("Frame")
@@ -426,14 +537,21 @@ function Library:CreateKeybindList()
     container.Position = UDim2.new(0, 0, 0, 38)
     container.BackgroundTransparency = 1
     container.AutomaticSize = Enum.AutomaticSize.Y
+    container.ZIndex = 101
     container.Parent = frame
     
     local list = Instance.new("UIListLayout")
     list.Padding = UDim.new(0, 2)
     list.Parent = container
     
+    local padding = Instance.new("UIPadding")
+    padding.PaddingLeft = UDim.new(0, 5)
+    padding.PaddingRight = UDim.new(0, 5)
+    padding.PaddingBottom = UDim.new(0, 5)
+    padding.Parent = container
+    
     list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        frame.Size = UDim2.new(0, 200, 0, 38 + list.AbsoluteContentSize.Y)
+        frame.Size = UDim2.new(0, 200, 0, 38 + list.AbsoluteContentSize.Y + 10)
     end)
     
     Util:Drag(frame, frame)
@@ -446,13 +564,15 @@ function Library:CreateKeybindList()
         Container = container,
         AddKeybind = function(name, key, mode)
             local bind = Instance.new("Frame")
-            bind.Size = UDim2.new(1, -10, 0, 24)
+            bind.Size = UDim2.new(1, 0, 0, 24)
             bind.BackgroundColor3 = Theme.BG3
             bind.BorderSizePixel = 0
-            bind.Parent = container
             bind.Name = name
+            bind.ZIndex = 102
+            bind.Parent = container
             
             Util:AddCorner(bind, 4)
+            Util:AddStroke(bind, Theme.Border, 1, 0.5)
             
             local nameLabel = Instance.new("TextLabel")
             nameLabel.Size = UDim2.new(0.6, -10, 1, 0)
@@ -464,6 +584,7 @@ function Library:CreateKeybindList()
             nameLabel.Font = Enum.Font.Gotham
             nameLabel.TextXAlignment = Enum.TextXAlignment.Left
             nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+            nameLabel.ZIndex = 103
             nameLabel.Parent = bind
             
             local keyLabel = Instance.new("TextLabel")
@@ -475,6 +596,7 @@ function Library:CreateKeybindList()
             keyLabel.TextSize = 11
             keyLabel.Font = Enum.Font.GothamBold
             keyLabel.TextXAlignment = Enum.TextXAlignment.Right
+            keyLabel.ZIndex = 103
             keyLabel.Parent = bind
             
             return bind
@@ -511,17 +633,19 @@ function Library:Create(options)
     main.BackgroundColor3 = Theme.BG1
     main.BorderSizePixel = 0
     main.ClipsDescendants = false
+    main.ZIndex = 1
     main.Parent = gui
     
     Util:AddCorner(main, 6)
     Util:AddStroke(main, Theme.Border, 1)
     
-    local shadow = Util:AddShadow(main)
+    local shadow = Util:AddShadow(main, 0.85)
     
     local topbar = Instance.new("Frame")
     topbar.Size = UDim2.new(1, 0, 0, 40)
     topbar.BackgroundColor3 = Theme.BG2
     topbar.BorderSizePixel = 0
+    topbar.ZIndex = 2
     topbar.Parent = main
     
     Util:AddCorner(topbar, 6)
@@ -531,6 +655,7 @@ function Library:Create(options)
     topCover.Position = UDim2.new(0, 0, 1, -8)
     topCover.BackgroundColor3 = Theme.BG2
     topCover.BorderSizePixel = 0
+    topCover.ZIndex = 2
     topCover.Parent = topbar
     
     local accent = Instance.new("Frame")
@@ -538,7 +663,11 @@ function Library:Create(options)
     accent.Position = UDim2.new(0, 0, 1, 0)
     accent.BackgroundColor3 = Theme.Accent
     accent.BorderSizePixel = 0
+    accent.ZIndex = 3
     accent.Parent = topbar
+    
+    local accentGradient = Util:AddGradient(accent, Theme.Accent, Theme.AccentDark, 0)
+    Util:AnimateGradient(accentGradient, 2)
     
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0, 200, 1, 0)
@@ -549,25 +678,11 @@ function Library:Create(options)
     title.TextSize = 18
     title.Font = Enum.Font.GothamBold
     title.TextXAlignment = Enum.TextXAlignment.Left
+    title.ZIndex = 3
     title.Parent = topbar
     
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Theme.Accent),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200, 200, 255)),
-        ColorSequenceKeypoint.new(1, Theme.Accent)
-    }
-    gradient.Parent = title
-    
-    task.spawn(function()
-        while gui.Parent do
-            for i = 0, 360, 2 do
-                if not gui.Parent then break end
-                gradient.Rotation = i
-                task.wait(0.03)
-            end
-        end
-    end)
+    local titleGradient = Util:AddGradient(title, Theme.Accent, Color3.fromRGB(200, 200, 255), 0)
+    Util:AnimateGradient(titleGradient, 2)
     
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 150, 1, -40)
@@ -575,10 +690,10 @@ function Library:Create(options)
     sidebar.BackgroundColor3 = Theme.BG2
     sidebar.BorderSizePixel = 0
     sidebar.ClipsDescendants = true
+    sidebar.ZIndex = 2
     sidebar.Parent = main
     
-    local sideStroke = Util:AddStroke(sidebar, Theme.Border)
-    sideStroke.Transparency = 0.5
+    local sideStroke = Util:AddStroke(sidebar, Theme.Border, 1, 0.5)
     
     local tabContainer = Instance.new("ScrollingFrame")
     tabContainer.Size = UDim2.new(1, -8, 1, -8)
@@ -588,6 +703,7 @@ function Library:Create(options)
     tabContainer.ScrollBarThickness = 3
     tabContainer.ScrollBarImageColor3 = Theme.Accent
     tabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+    tabContainer.ZIndex = 3
     tabContainer.Parent = sidebar
     
     local tabLayout = Instance.new("UIListLayout")
@@ -603,10 +719,11 @@ function Library:Create(options)
     content.Position = UDim2.new(0, 154, 0, 44)
     content.BackgroundTransparency = 1
     content.ClipsDescendants = true
+    content.ZIndex = 2
     content.Parent = main
     
     Util:Drag(main, topbar)
-    Util:Resize(main, nil)
+    Util:Resize(main)
     
     Library.Gui = gui
     Library.Main = main
@@ -631,6 +748,7 @@ function Library:AddTab(name, icon)
     button.BorderSizePixel = 0
     button.Text = ""
     button.AutoButtonColor = false
+    button.ZIndex = 4
     button.Parent = self.Sidebar
     
     Util:AddCorner(button, 5)
@@ -642,6 +760,7 @@ function Library:AddTab(name, icon)
     indicator.BackgroundColor3 = Theme.Accent
     indicator.BorderSizePixel = 0
     indicator.Visible = false
+    indicator.ZIndex = 5
     indicator.Parent = button
     
     Util:AddCorner(indicator, 2)
@@ -652,6 +771,7 @@ function Library:AddTab(name, icon)
     iconLabel.BackgroundTransparency = 1
     iconLabel.Image = icon or ""
     iconLabel.ImageColor3 = Theme.TextDim
+    iconLabel.ZIndex = 5
     iconLabel.Parent = button
     
     local label = Instance.new("TextLabel")
@@ -663,6 +783,7 @@ function Library:AddTab(name, icon)
     label.TextSize = 12
     label.Font = Enum.Font.GothamSemibold
     label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 5
     label.Parent = button
     
     local container = Instance.new("ScrollingFrame")
@@ -674,12 +795,14 @@ function Library:AddTab(name, icon)
     container.ScrollBarImageColor3 = Theme.Accent
     container.CanvasSize = UDim2.new(0, 0, 0, 0)
     container.Visible = false
+    container.ZIndex = 3
     container.Parent = self.Content
     
     local leftColumn = Instance.new("Frame")
     leftColumn.Size = UDim2.new(0.5, -4, 1, 0)
     leftColumn.Position = UDim2.new(0, 0, 0, 0)
     leftColumn.BackgroundTransparency = 1
+    leftColumn.ZIndex = 4
     leftColumn.Parent = container
     
     local leftLayout = Instance.new("UIListLayout")
@@ -690,6 +813,7 @@ function Library:AddTab(name, icon)
     rightColumn.Size = UDim2.new(0.5, -4, 1, 0)
     rightColumn.Position = UDim2.new(0.5, 4, 0, 0)
     rightColumn.BackgroundTransparency = 1
+    rightColumn.ZIndex = 4
     rightColumn.Parent = container
     
     local rightLayout = Instance.new("UIListLayout")
@@ -727,8 +851,9 @@ function Library:AddTab(name, icon)
     
     button.MouseEnter:Connect(function()
         if self.CurrentTab ~= name then
-            Util:Tween(button, {BackgroundColor3 = Color3.fromRGB(20, 20, 20)}, 0.1)
+            Util:Tween(button, {BackgroundColor3 = Color3.fromRGB(20, 20, 22)}, 0.1)
             Util:Tween(label, {TextColor3 = Color3.fromRGB(200, 200, 200)}, 0.1)
+            Util:Tween(buttonStroke, {Transparency = 0.3}, 0.1)
         end
     end)
     
@@ -736,6 +861,7 @@ function Library:AddTab(name, icon)
         if self.CurrentTab ~= name then
             Util:Tween(button, {BackgroundColor3 = Theme.BG1}, 0.1)
             Util:Tween(label, {TextColor3 = Theme.TextDim}, 0.1)
+            Util:Tween(buttonStroke, {Transparency = 0}, 0.1)
         end
     end)
     
@@ -787,6 +913,7 @@ function Library:AddSection(name, side)
     section.BackgroundColor3 = Theme.BG2
     section.BorderSizePixel = 0
     section.AutomaticSize = Enum.AutomaticSize.Y
+    section.ZIndex = 5
     section.Parent = targetColumn
     
     Util:AddCorner(section, 5)
@@ -795,6 +922,7 @@ function Library:AddSection(name, side)
     local header = Instance.new("Frame")
     header.Size = UDim2.new(1, 0, 0, 32)
     header.BackgroundTransparency = 1
+    header.ZIndex = 6
     header.Parent = section
     
     local headerLabel = Instance.new("TextLabel")
@@ -806,6 +934,7 @@ function Library:AddSection(name, side)
     headerLabel.TextSize = 13
     headerLabel.Font = Enum.Font.GothamBold
     headerLabel.TextXAlignment = Enum.TextXAlignment.Left
+    headerLabel.ZIndex = 7
     headerLabel.Parent = header
     
     local container = Instance.new("Frame")
@@ -813,6 +942,7 @@ function Library:AddSection(name, side)
     container.Position = UDim2.new(0, 0, 0, 32)
     container.BackgroundTransparency = 1
     container.AutomaticSize = Enum.AutomaticSize.Y
+    container.ZIndex = 6
     container.Parent = section
     
     local layout = Instance.new("UIListLayout")
@@ -827,11 +957,11 @@ function Library:AddSection(name, side)
     padding.Parent = container
     
     section.MouseEnter:Connect(function()
-        Util:Tween(sectionStroke, {Color = Theme.Accent}, 0.15)
+        Util:Tween(sectionStroke, {Color = Theme.Accent, Transparency = 0}, 0.15)
     end)
     
     section.MouseLeave:Connect(function()
-        Util:Tween(sectionStroke, {Color = Theme.Border}, 0.15)
+        Util:Tween(sectionStroke, {Color = Theme.Border, Transparency = 0}, 0.15)
     end)
     
     return setmetatable({
@@ -840,6 +970,9 @@ function Library:AddSection(name, side)
         Stroke = sectionStroke
     }, {__index = self})
 end
+
+-- Continuing in next message due to length...
+-- Part 2: UI Components
 
 function Library:AddLabel(text)
     local label = Instance.new("TextLabel")
@@ -852,11 +985,65 @@ function Library:AddLabel(text)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.TextWrapped = true
     label.AutomaticSize = Enum.AutomaticSize.Y
+    label.ZIndex = 7
     label.Parent = self.Container
     
     return {
         SetText = function(t)
             label.Text = t
+        end
+    }
+end
+
+function Library:AddParagraph(title, text)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 0)
+    frame.BackgroundColor3 = Theme.BG3
+    frame.BorderSizePixel = 0
+    frame.AutomaticSize = Enum.AutomaticSize.Y
+    frame.ZIndex = 7
+    frame.Parent = self.Container
+    
+    Util:AddCorner(frame, 5)
+    Util:AddStroke(frame, Theme.Border, 1)
+    
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -16, 0, 20)
+    titleLabel.Position = UDim2.new(0, 8, 0, 6)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Theme.Text
+    titleLabel.TextSize = 12
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.ZIndex = 8
+    titleLabel.Parent = frame
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, -16, 0, 0)
+    textLabel.Position = UDim2.new(0, 8, 0, 28)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = text
+    textLabel.TextColor3 = Theme.TextDim
+    textLabel.TextSize = 11
+    textLabel.Font = Enum.Font.Gotham
+    textLabel.TextXAlignment = Enum.TextXAlignment.Left
+    textLabel.TextYAlignment = Enum.TextYAlignment.Top
+    textLabel.TextWrapped = true
+    textLabel.AutomaticSize = Enum.AutomaticSize.Y
+    textLabel.ZIndex = 8
+    textLabel.Parent = frame
+    
+    local padding = Instance.new("UIPadding")
+    padding.PaddingBottom = UDim.new(0, 8)
+    padding.Parent = frame
+    
+    return {
+        SetTitle = function(t)
+            titleLabel.Text = t
+        end,
+        SetText = function(t)
+            textLabel.Text = t
         end
     }
 end
@@ -875,27 +1062,88 @@ function Library:AddButton(options)
     button.TextSize = 12
     button.Font = Enum.Font.GothamBold
     button.AutoButtonColor = false
+    button.ZIndex = 7
     button.Parent = self.Container
     
     Util:AddCorner(button, 5)
-    Util:AddStroke(button, Theme.Border, 1)
+    local buttonStroke = Util:AddStroke(button, Theme.Border, 1)
     
     button.MouseEnter:Connect(function()
         Util:Tween(button, {BackgroundColor3 = Color3.fromRGB(35, 35, 40)}, 0.1)
+        Util:Tween(buttonStroke, {Color = Theme.Accent, Transparency = 0.5}, 0.1)
     end)
     
     button.MouseLeave:Connect(function()
         Util:Tween(button, {BackgroundColor3 = Theme.BG3}, 0.1)
+        Util:Tween(buttonStroke, {Color = Theme.Border, Transparency = 0}, 0.1)
     end)
     
     button.MouseButton1Click:Connect(function()
         Util:Tween(button, {BackgroundColor3 = Theme.Accent}, 0.05)
+        Util:Tween(buttonStroke, {Color = Theme.Accent}, 0.05)
         task.wait(0.1)
         Util:Tween(button, {BackgroundColor3 = Theme.BG3}, 0.15)
+        Util:Tween(buttonStroke, {Color = Theme.Border}, 0.15)
         callback()
     end)
     
     return button
+end
+
+function Library:AddButtonGroup(buttons)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 34)
+    frame.BackgroundTransparency = 1
+    frame.ZIndex = 7
+    frame.Parent = self.Container
+    
+    local layout = Instance.new("UIListLayout")
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.Padding = UDim.new(0, 4)
+    layout.Parent = frame
+    
+    local buttonObjs = {}
+    
+    for _, btnData in ipairs(buttons) do
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(1 / #buttons, -((#buttons - 1) * 4) / #buttons, 1, 0)
+        button.BackgroundColor3 = Theme.BG3
+        button.BorderSizePixel = 0
+        button.Text = btnData.Name or "Button"
+        button.TextColor3 = Theme.Text
+        button.TextSize = 11
+        button.Font = Enum.Font.GothamBold
+        button.AutoButtonColor = false
+        button.ZIndex = 8
+        button.Parent = frame
+        
+        Util:AddCorner(button, 5)
+        local stroke = Util:AddStroke(button, Theme.Border, 1)
+        
+        button.MouseEnter:Connect(function()
+            Util:Tween(button, {BackgroundColor3 = Color3.fromRGB(35, 35, 40)}, 0.1)
+            Util:Tween(stroke, {Color = Theme.Accent, Transparency = 0.5}, 0.1)
+        end)
+        
+        button.MouseLeave:Connect(function()
+            Util:Tween(button, {BackgroundColor3 = Theme.BG3}, 0.1)
+            Util:Tween(stroke, {Color = Theme.Border, Transparency = 0}, 0.1)
+        end)
+        
+        button.MouseButton1Click:Connect(function()
+            Util:Tween(button, {BackgroundColor3 = Theme.Accent}, 0.05)
+            task.wait(0.1)
+            Util:Tween(button, {BackgroundColor3 = Theme.BG3}, 0.15)
+            if btnData.Callback then
+                btnData.Callback()
+            end
+        end)
+        
+        table.insert(buttonObjs, button)
+    end
+    
+    return buttonObjs
 end
 
 function Library:AddInput(options)
@@ -910,10 +1158,11 @@ function Library:AddInput(options)
     frame.Size = UDim2.new(1, 0, 0, 52)
     frame.BackgroundColor3 = Theme.BG3
     frame.BorderSizePixel = 0
+    frame.ZIndex = 7
     frame.Parent = self.Container
     
     Util:AddCorner(frame, 5)
-    Util:AddStroke(frame, Theme.Border, 1)
+    local frameStroke = Util:AddStroke(frame, Theme.Border, 1)
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -16, 0, 18)
@@ -924,6 +1173,7 @@ function Library:AddInput(options)
     label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 8
     label.Parent = frame
     
     local input = Instance.new("TextBox")
@@ -938,6 +1188,7 @@ function Library:AddInput(options)
     input.TextSize = 11
     input.Font = Enum.Font.Gotham
     input.ClearTextOnFocus = false
+    input.ZIndex = 8
     input.Parent = frame
     
     local inputPadding = Instance.new("UIPadding")
@@ -946,7 +1197,17 @@ function Library:AddInput(options)
     inputPadding.Parent = input
     
     Util:AddCorner(input, 4)
-    Util:AddStroke(input, Theme.Border, 1)
+    local inputStroke = Util:AddStroke(input, Theme.Border, 1)
+    
+    input.Focused:Connect(function()
+        Util:Tween(inputStroke, {Color = Theme.Accent}, 0.15)
+        Util:Tween(frameStroke, {Color = Theme.Accent, Transparency = 0.5}, 0.15)
+    end)
+    
+    input.FocusLost:Connect(function()
+        Util:Tween(inputStroke, {Color = Theme.Border}, 0.15)
+        Util:Tween(frameStroke, {Color = Theme.Border, Transparency = 0}, 0.15)
+    end)
     
     if flag then
         Library.Flags[flag] = default
@@ -984,10 +1245,11 @@ function Library:AddSlider(options)
     frame.Size = UDim2.new(1, 0, 0, 50)
     frame.BackgroundColor3 = Theme.BG3
     frame.BorderSizePixel = 0
+    frame.ZIndex = 7
     frame.Parent = self.Container
     
     Util:AddCorner(frame, 5)
-    Util:AddStroke(frame, Theme.Border, 1)
+    local frameStroke = Util:AddStroke(frame, Theme.Border, 1)
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -70, 0, 18)
@@ -998,6 +1260,7 @@ function Library:AddSlider(options)
     label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 8
     label.Parent = frame
     
     local valueLabel = Instance.new("TextLabel")
@@ -1009,6 +1272,7 @@ function Library:AddSlider(options)
     valueLabel.TextSize = 11
     valueLabel.Font = Enum.Font.GothamBold
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    valueLabel.ZIndex = 8
     valueLabel.Parent = frame
     
     local sliderBack = Instance.new("Frame")
@@ -1016,6 +1280,7 @@ function Library:AddSlider(options)
     sliderBack.Position = UDim2.new(0, 10, 0, 32)
     sliderBack.BackgroundColor3 = Theme.BG1
     sliderBack.BorderSizePixel = 0
+    sliderBack.ZIndex = 8
     sliderBack.Parent = frame
     
     Util:AddCorner(sliderBack, 3)
@@ -1025,15 +1290,18 @@ function Library:AddSlider(options)
     sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
     sliderFill.BackgroundColor3 = Theme.Accent
     sliderFill.BorderSizePixel = 0
+    sliderFill.ZIndex = 9
     sliderFill.Parent = sliderBack
     
     Util:AddCorner(sliderFill, 3)
+    Util:AddGradient(sliderFill, Theme.Accent, Theme.AccentDark, 0)
     
     local sliderKnob = Instance.new("Frame")
     sliderKnob.Size = UDim2.new(0, 12, 0, 12)
     sliderKnob.Position = UDim2.new(1, -6, 0.5, -6)
     sliderKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     sliderKnob.BorderSizePixel = 0
+    sliderKnob.ZIndex = 10
     sliderKnob.Parent = sliderFill
     
     Util:AddCorner(sliderKnob, 6)
@@ -1053,7 +1321,7 @@ function Library:AddSlider(options)
         value = v
         
         local percent = (v - min) / (max - min)
-        sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+        Util:Tween(sliderFill, {Size = UDim2.new(percent, 0, 1, 0)}, 0.1, Enum.EasingStyle.Quad)
         valueLabel.Text = tostring(v)
         
         if flag then
@@ -1068,12 +1336,15 @@ function Library:AddSlider(options)
             local mouse = input.Position
             local pos = (mouse.X - sliderBack.AbsolutePosition.X) / sliderBack.AbsoluteSize.X
             set(min + (max - min) * math.clamp(pos, 0, 1))
+            
+            Util:Tween(frameStroke, {Color = Theme.Accent, Transparency = 0.5}, 0.15)
         end
     end)
     
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
+            Util:Tween(frameStroke, {Color = Theme.Border, Transparency = 0}, 0.15)
         end
     end)
     
@@ -1105,10 +1376,11 @@ function Library:AddToggle(options)
     frame.Size = UDim2.new(1, 0, 0, 32)
     frame.BackgroundColor3 = Theme.BG3
     frame.BorderSizePixel = 0
+    frame.ZIndex = 7
     frame.Parent = self.Container
     
     Util:AddCorner(frame, 5)
-    Util:AddStroke(frame, Theme.Border, 1)
+    local frameStroke = Util:AddStroke(frame, Theme.Border, 1)
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -50, 1, 0)
@@ -1119,6 +1391,7 @@ function Library:AddToggle(options)
     label.TextSize = 12
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 8
     label.Parent = frame
     
     local checkbox = Instance.new("TextButton")
@@ -1128,10 +1401,11 @@ function Library:AddToggle(options)
     checkbox.BorderSizePixel = 0
     checkbox.Text = ""
     checkbox.AutoButtonColor = false
+    checkbox.ZIndex = 8
     checkbox.Parent = frame
     
     Util:AddCorner(checkbox, 4)
-    Util:AddStroke(checkbox, Theme.Border, 1)
+    local checkStroke = Util:AddStroke(checkbox, Theme.Border, 1)
     
     local check = Instance.new("ImageLabel")
     check.Size = UDim2.new(0, 12, 0, 12)
@@ -1142,6 +1416,7 @@ function Library:AddToggle(options)
     check.ImageRectSize = Vector2.new(24, 24)
     check.ImageColor3 = Theme.Accent
     check.Visible = default
+    check.ZIndex = 9
     check.Parent = checkbox
     
     local state = default
@@ -1157,8 +1432,12 @@ function Library:AddToggle(options)
         
         if state then
             Util:Tween(checkbox, {BackgroundColor3 = Color3.fromRGB(30, 30, 35)}, 0.15)
+            Util:Tween(checkStroke, {Color = Theme.Accent}, 0.15)
+            Util:Tween(frameStroke, {Color = Theme.Accent, Transparency = 0.5}, 0.15)
         else
             Util:Tween(checkbox, {BackgroundColor3 = Theme.BG1}, 0.15)
+            Util:Tween(checkStroke, {Color = Theme.Border}, 0.15)
+            Util:Tween(frameStroke, {Color = Theme.Border, Transparency = 0}, 0.15)
         end
         
         if flag then
@@ -1177,6 +1456,16 @@ function Library:AddToggle(options)
         end
     end)
     
+    frame.MouseEnter:Connect(function()
+        Util:Tween(frameStroke, {Transparency = 0.5}, 0.1)
+    end)
+    
+    frame.MouseLeave:Connect(function()
+        if not state then
+            Util:Tween(frameStroke, {Transparency = 0}, 0.1)
+        end
+    end)
+    
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton2 then
             local menu = Instance.new("Frame")
@@ -1184,11 +1473,12 @@ function Library:AddToggle(options)
             menu.Position = UDim2.new(0, frame.AbsolutePosition.X, 0, frame.AbsolutePosition.Y + 35)
             menu.BackgroundColor3 = Theme.BG2
             menu.BorderSizePixel = 0
-            menu.ZIndex = 100
+            menu.ZIndex = 200
             menu.Parent = Library.Gui
             
             Util:AddCorner(menu, 4)
             Util:AddStroke(menu, Theme.Accent, 1)
+            Util:CreateGlow(menu, Theme.Accent, 0.9)
             
             local layout = Instance.new("UIListLayout")
             layout.Padding = UDim.new(0, 2)
@@ -1205,7 +1495,7 @@ function Library:AddToggle(options)
                 opt.TextSize = 11
                 opt.Font = Enum.Font.Gotham
                 opt.AutoButtonColor = false
-                opt.ZIndex = 101
+                opt.ZIndex = 201
                 opt.Parent = menu
                 
                 opt.MouseEnter:Connect(function()
@@ -1225,7 +1515,7 @@ function Library:AddToggle(options)
             end
             
             layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                menu.Size = UDim2.new(0, 100, 0, layout.AbsoluteContentSize.Y + 4)
+                Util:Tween(menu, {Size = UDim2.new(0, 100, 0, layout.AbsoluteContentSize.Y + 4)}, 0.15, Enum.EasingStyle.Back)
             end)
             
             task.delay(3, function()
@@ -1240,6 +1530,9 @@ function Library:AddToggle(options)
     }
 end
 
+-- Continuing with Dropdown, MultiDropdown, Keybind, and ColorPicker in next part...
+-- Part 3: Dropdown, Keybind, ColorPicker, and Config System
+
 function Library:AddDropdown(options)
     options = options or {}
     local name = options.Name or "Dropdown"
@@ -1252,11 +1545,11 @@ function Library:AddDropdown(options)
     frame.Size = UDim2.new(1, 0, 0, 52)
     frame.BackgroundColor3 = Theme.BG3
     frame.BorderSizePixel = 0
+    frame.ZIndex = 7
     frame.Parent = self.Container
-    frame.ZIndex = 5
     
     Util:AddCorner(frame, 5)
-    Util:AddStroke(frame, Theme.Border, 1)
+    local frameStroke = Util:AddStroke(frame, Theme.Border, 1)
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -16, 0, 18)
@@ -1267,7 +1560,7 @@ function Library:AddDropdown(options)
     label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
-    label.ZIndex = 6
+    label.ZIndex = 8
     label.Parent = frame
     
     local button = Instance.new("TextButton")
@@ -1277,11 +1570,11 @@ function Library:AddDropdown(options)
     button.BorderSizePixel = 0
     button.Text = ""
     button.AutoButtonColor = false
-    button.ZIndex = 7
+    button.ZIndex = 8
     button.Parent = frame
     
     Util:AddCorner(button, 4)
-    Util:AddStroke(button, Theme.Border, 1)
+    local buttonStroke = Util:AddStroke(button, Theme.Border, 1)
     
     local selected = Instance.new("TextLabel")
     selected.Size = UDim2.new(1, -32, 1, 0)
@@ -1293,7 +1586,7 @@ function Library:AddDropdown(options)
     selected.Font = Enum.Font.Gotham
     selected.TextXAlignment = Enum.TextXAlignment.Left
     selected.TextTruncate = Enum.TextTruncate.AtEnd
-    selected.ZIndex = 8
+    selected.ZIndex = 9
     selected.Parent = button
     
     local arrow = Instance.new("TextLabel")
@@ -1304,7 +1597,7 @@ function Library:AddDropdown(options)
     arrow.TextColor3 = Theme.TextDim
     arrow.TextSize = 9
     arrow.Font = Enum.Font.GothamBold
-    arrow.ZIndex = 8
+    arrow.ZIndex = 9
     arrow.Parent = button
     
     local dropdown = Instance.new("Frame")
@@ -1313,12 +1606,13 @@ function Library:AddDropdown(options)
     dropdown.BackgroundColor3 = Theme.BG1
     dropdown.BorderSizePixel = 0
     dropdown.Visible = false
-    dropdown.ZIndex = 150
+    dropdown.ZIndex = 250
     dropdown.ClipsDescendants = true
     dropdown.Parent = frame
     
     Util:AddCorner(dropdown, 4)
-    Util:AddStroke(dropdown, Theme.Accent, 1)
+    Util:AddStroke(dropdown, Theme.Accent, 1.5)
+    Util:CreateGlow(dropdown, Theme.Accent, 0.9)
     
     local dropContainer = Instance.new("ScrollingFrame")
     dropContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -1327,7 +1621,7 @@ function Library:AddDropdown(options)
     dropContainer.ScrollBarThickness = 3
     dropContainer.ScrollBarImageColor3 = Theme.Accent
     dropContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
-    dropContainer.ZIndex = 151
+    dropContainer.ZIndex = 251
     dropContainer.Parent = dropdown
     
     local dropLayout = Instance.new("UIListLayout")
@@ -1359,21 +1653,24 @@ function Library:AddDropdown(options)
             option.TextSize = 11
             option.Font = Enum.Font.Gotham
             option.TextXAlignment = Enum.TextXAlignment.Left
-            option.TextPadding = Vector2.new(8, 0)
             option.AutoButtonColor = false
-            option.ZIndex = 152
+            option.ZIndex = 252
             option.Parent = dropContainer
             
             local optPadding = Instance.new("UIPadding")
             optPadding.PaddingLeft = UDim.new(0, 8)
             optPadding.Parent = option
             
+            local optStroke = Util:AddStroke(option, Theme.Border, 1, 0.8)
+            
             option.MouseEnter:Connect(function()
                 Util:Tween(option, {BackgroundColor3 = Theme.BG3}, 0.1)
+                Util:Tween(optStroke, {Color = Theme.Accent, Transparency = 0.3}, 0.1)
             end)
             
             option.MouseLeave:Connect(function()
                 Util:Tween(option, {BackgroundColor3 = Theme.BG1}, 0.1)
+                Util:Tween(optStroke, {Transparency = 0.8}, 0.1)
             end)
             
             option.MouseButton1Click:Connect(function()
@@ -1387,21 +1684,17 @@ function Library:AddDropdown(options)
                 callback(value)
                 
                 open = false
-                Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, 0)}, 0.15)
+                Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, 0)}, 0.15, Enum.EasingStyle.Back)
                 task.wait(0.15)
                 dropdown.Visible = false
                 arrow.Text = "▼"
+                frame.ZIndex = 7
             end)
         end
         
         dropLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             dropContainer.CanvasSize = UDim2.new(0, 0, 0, dropLayout.AbsoluteContentSize.Y)
         end)
-        
-        local height = math.min(#newList * 25, 120)
-        if open then
-            dropdown.Size = UDim2.new(1, -20, 0, height)
-        end
     end
     
     button.MouseButton1Click:Connect(function()
@@ -1410,17 +1703,19 @@ function Library:AddDropdown(options)
         if open then
             dropdown.Visible = true
             local height = math.min(#list * 25, 120)
-            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, height)}, 0.15)
+            frame.ZIndex = 250
+            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, height)}, 0.15, Enum.EasingStyle.Back)
+            Util:Tween(frameStroke, {Color = Theme.Accent, Transparency = 0.5}, 0.15)
+            Util:Tween(buttonStroke, {Color = Theme.Accent}, 0.15)
             arrow.Text = "▲"
-            dropdown.ZIndex = 150
-            frame.ZIndex = 150
         else
-            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, 0)}, 0.15)
+            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, 0)}, 0.15, Enum.EasingStyle.Back)
+            Util:Tween(frameStroke, {Color = Theme.Border, Transparency = 0}, 0.15)
+            Util:Tween(buttonStroke, {Color = Theme.Border}, 0.15)
             task.wait(0.15)
             dropdown.Visible = false
             arrow.Text = "▼"
-            dropdown.ZIndex = 5
-            frame.ZIndex = 5
+            frame.ZIndex = 7
         end
     end)
     
@@ -1455,11 +1750,11 @@ function Library:AddMultiDropdown(options)
     frame.Size = UDim2.new(1, 0, 0, 52)
     frame.BackgroundColor3 = Theme.BG3
     frame.BorderSizePixel = 0
+    frame.ZIndex = 7
     frame.Parent = self.Container
-    frame.ZIndex = 5
     
     Util:AddCorner(frame, 5)
-    Util:AddStroke(frame, Theme.Border, 1)
+    local frameStroke = Util:AddStroke(frame, Theme.Border, 1)
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -16, 0, 18)
@@ -1470,7 +1765,7 @@ function Library:AddMultiDropdown(options)
     label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
-    label.ZIndex = 6
+    label.ZIndex = 8
     label.Parent = frame
     
     local button = Instance.new("TextButton")
@@ -1480,11 +1775,11 @@ function Library:AddMultiDropdown(options)
     button.BorderSizePixel = 0
     button.Text = ""
     button.AutoButtonColor = false
-    button.ZIndex = 7
+    button.ZIndex = 8
     button.Parent = frame
     
     Util:AddCorner(button, 4)
-    Util:AddStroke(button, Theme.Border, 1)
+    local buttonStroke = Util:AddStroke(button, Theme.Border, 1)
     
     local selected = Instance.new("TextLabel")
     selected.Size = UDim2.new(1, -32, 1, 0)
@@ -1496,7 +1791,7 @@ function Library:AddMultiDropdown(options)
     selected.Font = Enum.Font.Gotham
     selected.TextXAlignment = Enum.TextXAlignment.Left
     selected.TextTruncate = Enum.TextTruncate.AtEnd
-    selected.ZIndex = 8
+    selected.ZIndex = 9
     selected.Parent = button
     
     local arrow = Instance.new("TextLabel")
@@ -1507,7 +1802,7 @@ function Library:AddMultiDropdown(options)
     arrow.TextColor3 = Theme.TextDim
     arrow.TextSize = 9
     arrow.Font = Enum.Font.GothamBold
-    arrow.ZIndex = 8
+    arrow.ZIndex = 9
     arrow.Parent = button
     
     local dropdown = Instance.new("Frame")
@@ -1516,12 +1811,13 @@ function Library:AddMultiDropdown(options)
     dropdown.BackgroundColor3 = Theme.BG1
     dropdown.BorderSizePixel = 0
     dropdown.Visible = false
-    dropdown.ZIndex = 150
+    dropdown.ZIndex = 250
     dropdown.ClipsDescendants = true
     dropdown.Parent = frame
     
     Util:AddCorner(dropdown, 4)
-    Util:AddStroke(dropdown, Theme.Accent, 1)
+    Util:AddStroke(dropdown, Theme.Accent, 1.5)
+    Util:CreateGlow(dropdown, Theme.Accent, 0.9)
     
     local dropContainer = Instance.new("ScrollingFrame")
     dropContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -1530,7 +1826,7 @@ function Library:AddMultiDropdown(options)
     dropContainer.ScrollBarThickness = 3
     dropContainer.ScrollBarImageColor3 = Theme.Accent
     dropContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
-    dropContainer.ZIndex = 151
+    dropContainer.ZIndex = 251
     dropContainer.Parent = dropdown
     
     local dropLayout = Instance.new("UIListLayout")
@@ -1569,7 +1865,7 @@ function Library:AddMultiDropdown(options)
             option.Size = UDim2.new(1, 0, 0, 24)
             option.BackgroundColor3 = Theme.BG1
             option.BorderSizePixel = 0
-            option.ZIndex = 152
+            option.ZIndex = 252
             option.Parent = dropContainer
             
             local optButton = Instance.new("TextButton")
@@ -1582,7 +1878,7 @@ function Library:AddMultiDropdown(options)
             optButton.Font = Enum.Font.Gotham
             optButton.TextXAlignment = Enum.TextXAlignment.Left
             optButton.AutoButtonColor = false
-            optButton.ZIndex = 153
+            optButton.ZIndex = 253
             optButton.Parent = option
             
             local check = Instance.new("Frame")
@@ -1590,11 +1886,11 @@ function Library:AddMultiDropdown(options)
             check.Position = UDim2.new(1, -20, 0.5, -7)
             check.BackgroundColor3 = Theme.BG3
             check.BorderSizePixel = 0
-            check.ZIndex = 153
+            check.ZIndex = 253
             check.Parent = option
             
             Util:AddCorner(check, 3)
-            Util:AddStroke(check, Theme.Border, 1)
+            local checkStroke = Util:AddStroke(check, Theme.Border, 1)
             
             local checkmark = Instance.new("ImageLabel")
             checkmark.Size = UDim2.new(0, 10, 0, 10)
@@ -1605,20 +1901,30 @@ function Library:AddMultiDropdown(options)
             checkmark.ImageRectSize = Vector2.new(24, 24)
             checkmark.ImageColor3 = Theme.Accent
             checkmark.Visible = values[item] or false
-            checkmark.ZIndex = 154
+            checkmark.ZIndex = 254
             checkmark.Parent = check
+            
+            local optStroke = Util:AddStroke(option, Theme.Border, 1, 0.8)
             
             optButton.MouseEnter:Connect(function()
                 Util:Tween(option, {BackgroundColor3 = Theme.BG3}, 0.1)
+                Util:Tween(optStroke, {Color = Theme.Accent, Transparency = 0.3}, 0.1)
             end)
             
             optButton.MouseLeave:Connect(function()
                 Util:Tween(option, {BackgroundColor3 = Theme.BG1}, 0.1)
+                Util:Tween(optStroke, {Transparency = 0.8}, 0.1)
             end)
             
             optButton.MouseButton1Click:Connect(function()
                 values[item] = not values[item]
                 checkmark.Visible = values[item]
+                
+                if values[item] then
+                    Util:Tween(checkStroke, {Color = Theme.Accent}, 0.15)
+                else
+                    Util:Tween(checkStroke, {Color = Theme.Border}, 0.15)
+                end
                 
                 if flag then
                     Library.Flags[flag] = values
@@ -1640,17 +1946,19 @@ function Library:AddMultiDropdown(options)
         if open then
             dropdown.Visible = true
             local height = math.min(dropLayout.AbsoluteContentSize.Y, 120)
-            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, height)}, 0.15)
+            frame.ZIndex = 250
+            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, height)}, 0.15, Enum.EasingStyle.Back)
+            Util:Tween(frameStroke, {Color = Theme.Accent, Transparency = 0.5}, 0.15)
+            Util:Tween(buttonStroke, {Color = Theme.Accent}, 0.15)
             arrow.Text = "▲"
-            dropdown.ZIndex = 150
-            frame.ZIndex = 150
         else
-            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, 0)}, 0.15)
+            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, 0)}, 0.15, Enum.EasingStyle.Back)
+            Util:Tween(frameStroke, {Color = Theme.Border, Transparency = 0}, 0.15)
+            Util:Tween(buttonStroke, {Color = Theme.Border}, 0.15)
             task.wait(0.15)
             dropdown.Visible = false
             arrow.Text = "▼"
-            dropdown.ZIndex = 5
-            frame.ZIndex = 5
+            frame.ZIndex = 7
         end
     end)
     
@@ -1669,6 +1977,9 @@ function Library:AddMultiDropdown(options)
     }
 end
 
+-- Continuing with Keybind and ColorPicker in the final part...
+-- Part 4: Keybind, ColorPicker, Config System, and Final Functions
+
 function Library:AddKeybind(options)
     options = options or {}
     local name = options.Name or "Keybind"
@@ -1682,13 +1993,14 @@ function Library:AddKeybind(options)
     frame.Size = UDim2.new(1, 0, 0, 32)
     frame.BackgroundColor3 = Theme.BG3
     frame.BorderSizePixel = 0
+    frame.ZIndex = 7
     frame.Parent = self.Container
     
     Util:AddCorner(frame, 5)
-    Util:AddStroke(frame, Theme.Border, 1)
+    local frameStroke = Util:AddStroke(frame, Theme.Border, 1)
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -90, 1, 0)
+    label.Size = UDim2.new(1, -120, 1, 0)
     label.Position = UDim2.new(0, 10, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = name
@@ -1696,25 +2008,27 @@ function Library:AddKeybind(options)
     label.TextSize = 12
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 8
     label.Parent = frame
     
     local modeLabel = Instance.new("TextLabel")
-    modeLabel.Size = UDim2.new(0, 40, 0, 14)
-    modeLabel.Position = UDim2.new(1, -116, 0.5, -7)
+    modeLabel.Size = UDim2.new(0, 45, 0, 18)
+    modeLabel.Position = UDim2.new(1, -112, 0.5, -9)
     modeLabel.BackgroundColor3 = Theme.BG1
     modeLabel.BorderSizePixel = 0
-    modeLabel.Text = mode:sub(1, 1)
+    modeLabel.Text = "[" .. mode:sub(1, 1) .. "]"
     modeLabel.TextColor3 = Theme.Accent
     modeLabel.TextSize = 10
     modeLabel.Font = Enum.Font.GothamBold
+    modeLabel.ZIndex = 8
     modeLabel.Parent = frame
     
     Util:AddCorner(modeLabel, 3)
     Util:AddStroke(modeLabel, Theme.Border, 1)
     
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0, 60, 0, 20)
-    button.Position = UDim2.new(1, -68, 0.5, -10)
+    button.Size = UDim2.new(0, 55, 0, 20)
+    button.Position = UDim2.new(1, -62, 0.5, -10)
     button.BackgroundColor3 = Theme.BG1
     button.BorderSizePixel = 0
     button.Text = default and default.Name or "None"
@@ -1722,10 +2036,11 @@ function Library:AddKeybind(options)
     button.TextSize = 10
     button.Font = Enum.Font.Gotham
     button.AutoButtonColor = false
+    button.ZIndex = 8
     button.Parent = frame
     
     Util:AddCorner(button, 4)
-    Util:AddStroke(button, Theme.Border, 1)
+    local buttonStroke = Util:AddStroke(button, Theme.Border, 1)
     
     local currentKey = default
     local listening = false
@@ -1741,6 +2056,7 @@ function Library:AddKeybind(options)
         if listening then return end
         listening = true
         button.Text = "..."
+        Util:Tween(buttonStroke, {Color = Theme.Accent}, 0.15)
         
         local connection
         connection = UserInputService.InputBegan:Connect(function(input, gp)
@@ -1766,6 +2082,7 @@ function Library:AddKeybind(options)
             
             listening = false
             connection:Disconnect()
+            Util:Tween(buttonStroke, {Color = Theme.Border}, 0.15)
             
             if flag then
                 Library.Flags[flag].Key = currentKey
@@ -1831,6 +2148,14 @@ function Library:AddKeybind(options)
         end
     end)
     
+    frame.MouseEnter:Connect(function()
+        Util:Tween(frameStroke, {Transparency = 0.5}, 0.1)
+    end)
+    
+    frame.MouseLeave:Connect(function()
+        Util:Tween(frameStroke, {Transparency = 0}, 0.1)
+    end)
+    
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton2 then
             local menu = Instance.new("Frame")
@@ -1838,11 +2163,12 @@ function Library:AddKeybind(options)
             menu.Position = UDim2.new(0, frame.AbsolutePosition.X, 0, frame.AbsolutePosition.Y + 35)
             menu.BackgroundColor3 = Theme.BG2
             menu.BorderSizePixel = 0
-            menu.ZIndex = 100
+            menu.ZIndex = 200
             menu.Parent = Library.Gui
             
             Util:AddCorner(menu, 4)
             Util:AddStroke(menu, Theme.Accent, 1)
+            Util:CreateGlow(menu, Theme.Accent, 0.9)
             
             local layout = Instance.new("UIListLayout")
             layout.Padding = UDim.new(0, 2)
@@ -1859,7 +2185,7 @@ function Library:AddKeybind(options)
                 opt.TextSize = 11
                 opt.Font = Enum.Font.Gotham
                 opt.AutoButtonColor = false
-                opt.ZIndex = 101
+                opt.ZIndex = 201
                 opt.Parent = menu
                 
                 opt.MouseEnter:Connect(function()
@@ -1872,7 +2198,7 @@ function Library:AddKeybind(options)
                 
                 opt.MouseButton1Click:Connect(function()
                     mode = m
-                    modeLabel.Text = m:sub(1, 1)
+                    modeLabel.Text = "[" .. m:sub(1, 1) .. "]"
                     if flag then Library.Flags[flag].Mode = m end
                     Library:Notify("Mode", "Set to " .. m, 1)
                     menu:Destroy()
@@ -1880,7 +2206,7 @@ function Library:AddKeybind(options)
             end
             
             layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                menu.Size = UDim2.new(0, 100, 0, layout.AbsoluteContentSize.Y + 4)
+                Util:Tween(menu, {Size = UDim2.new(0, 100, 0, layout.AbsoluteContentSize.Y + 4)}, 0.15, Enum.EasingStyle.Back)
             end)
             
             task.delay(3, function()
@@ -1911,10 +2237,11 @@ function Library:AddColorPicker(options)
     frame.Size = UDim2.new(1, 0, 0, 32)
     frame.BackgroundColor3 = Theme.BG3
     frame.BorderSizePixel = 0
+    frame.ZIndex = 7
     frame.Parent = self.Container
     
     Util:AddCorner(frame, 5)
-    Util:AddStroke(frame, Theme.Border, 1)
+    local frameStroke = Util:AddStroke(frame, Theme.Border, 1)
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -50, 1, 0)
@@ -1925,20 +2252,21 @@ function Library:AddColorPicker(options)
     label.TextSize = 12
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 8
     label.Parent = frame
     
     local colorDisplay = Instance.new("TextButton")
-    colorDisplay.Size = UDim2.new(0, 32, 0, 18)
-    colorDisplay.Position = UDim2.new(1, -40, 0.5, -9)
+    colorDisplay.Size = UDim2.new(0, 32, 0, 20)
+    colorDisplay.Position = UDim2.new(1, -38, 0.5, -10)
     colorDisplay.BackgroundColor3 = default
     colorDisplay.BorderSizePixel = 0
     colorDisplay.Text = ""
     colorDisplay.AutoButtonColor = false
-    colorDisplay.ZIndex = 5
+    colorDisplay.ZIndex = 8
     colorDisplay.Parent = frame
     
     Util:AddCorner(colorDisplay, 4)
-    Util:AddStroke(colorDisplay, Theme.Border, 1)
+    local displayStroke = Util:AddStroke(colorDisplay, Theme.Border, 1)
     
     local pickerOpen = false
     local currentColor = default
@@ -1949,18 +2277,20 @@ function Library:AddColorPicker(options)
     picker.BackgroundColor3 = Theme.BG2
     picker.BorderSizePixel = 0
     picker.Visible = false
-    picker.ZIndex = 200
+    picker.ZIndex = 300
     picker.Parent = frame
     
     Util:AddCorner(picker, 5)
     Util:AddStroke(picker, Theme.Accent, 1.5)
+    Util:CreateGlow(picker, Theme.Accent, 0.9)
     
+    -- HSV Picker Implementation
     local saturationFrame = Instance.new("Frame")
     saturationFrame.Size = UDim2.new(1, -20, 0, 120)
     saturationFrame.Position = UDim2.new(0, 10, 0, 10)
     saturationFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
     saturationFrame.BorderSizePixel = 0
-    saturationFrame.ZIndex = 201
+    saturationFrame.ZIndex = 301
     saturationFrame.Parent = picker
     
     Util:AddCorner(saturationFrame, 4)
@@ -1970,7 +2300,7 @@ function Library:AddColorPicker(options)
     saturationWhite.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     saturationWhite.BackgroundTransparency = 0
     saturationWhite.BorderSizePixel = 0
-    saturationWhite.ZIndex = 202
+    saturationWhite.ZIndex = 302
     saturationWhite.Parent = saturationFrame
     
     Util:AddCorner(saturationWhite, 4)
@@ -1987,7 +2317,7 @@ function Library:AddColorPicker(options)
     saturationBlack.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     saturationBlack.BackgroundTransparency = 0
     saturationBlack.BorderSizePixel = 0
-    saturationBlack.ZIndex = 203
+    saturationBlack.ZIndex = 303
     saturationBlack.Parent = saturationFrame
     
     Util:AddCorner(saturationBlack, 4)
@@ -2001,13 +2331,13 @@ function Library:AddColorPicker(options)
     blackGradient.Parent = saturationBlack
     
     local saturationPicker = Instance.new("Frame")
-    saturationPicker.Size = UDim2.new(0, 6, 0, 6)
+    saturationPicker.Size = UDim2.new(0, 8, 0, 8)
     saturationPicker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     saturationPicker.BorderSizePixel = 0
-    saturationPicker.ZIndex = 204
+    saturationPicker.ZIndex = 304
     saturationPicker.Parent = saturationFrame
     
-    Util:AddCorner(saturationPicker, 3)
+    Util:AddCorner(saturationPicker, 4)
     Util:AddStroke(saturationPicker, Color3.fromRGB(0, 0, 0), 2)
     
     local hueFrame = Instance.new("Frame")
@@ -2015,7 +2345,7 @@ function Library:AddColorPicker(options)
     hueFrame.Position = UDim2.new(0, 10, 0, 140)
     hueFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     hueFrame.BorderSizePixel = 0
-    hueFrame.ZIndex = 201
+    hueFrame.ZIndex = 301
     hueFrame.Parent = picker
     
     Util:AddCorner(hueFrame, 4)
@@ -2036,7 +2366,7 @@ function Library:AddColorPicker(options)
     huePicker.Size = UDim2.new(0, 4, 1, 0)
     huePicker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     huePicker.BorderSizePixel = 0
-    huePicker.ZIndex = 202
+    huePicker.ZIndex = 302
     huePicker.Parent = hueFrame
     
     Util:AddStroke(huePicker, Color3.fromRGB(0, 0, 0), 2)
@@ -2046,7 +2376,7 @@ function Library:AddColorPicker(options)
     hexFrame.Position = UDim2.new(0, 10, 0, 160)
     hexFrame.BackgroundColor3 = Theme.BG1
     hexFrame.BorderSizePixel = 0
-    hexFrame.ZIndex = 201
+    hexFrame.ZIndex = 301
     hexFrame.Parent = picker
     
     Util:AddCorner(hexFrame, 4)
@@ -2060,7 +2390,7 @@ function Library:AddColorPicker(options)
     hexInput.TextColor3 = Theme.Text
     hexInput.TextSize = 10
     hexInput.Font = Enum.Font.GothamMedium
-    hexInput.ZIndex = 202
+    hexInput.ZIndex = 302
     hexInput.Parent = hexFrame
     
     local h, s, v = 0, 0, 1
@@ -2127,12 +2457,13 @@ function Library:AddColorPicker(options)
         
         if flag then
             Library.Flags[flag] = currentColor
+            table.insert(Library.ColorPickers, {Flag = flag, Picker = colorDisplay})
         end
         callback(currentColor)
     end
     
     h, s, v = rgbToHsv(default)
-    saturationPicker.Position = UDim2.new(s, -3, 1 - v, -3)
+    saturationPicker.Position = UDim2.new(s, -4, 1 - v, -4)
     huePicker.Position = UDim2.new(h, -2, 0, 0)
     updateColor()
     
@@ -2152,7 +2483,7 @@ function Library:AddColorPicker(options)
             s = x
             v = 1 - y
             
-            saturationPicker.Position = UDim2.new(x, -3, y, -3)
+            saturationPicker.Position = UDim2.new(x, -4, y, -4)
             updateColor()
         end
     end)
@@ -2192,7 +2523,7 @@ function Library:AddColorPicker(options)
                 s = x
                 v = 1 - y
                 
-                saturationPicker.Position = UDim2.new(x, -3, y, -3)
+                saturationPicker.Position = UDim2.new(x, -4, y, -4)
                 updateColor()
             elseif hueDragging then
                 local pos = input.Position
@@ -2217,7 +2548,7 @@ function Library:AddColorPicker(options)
             if r and g and b then
                 currentColor = Color3.fromRGB(r, g, b)
                 h, s, v = rgbToHsv(currentColor)
-                saturationPicker.Position = UDim2.new(s, -3, 1 - v, -3)
+                saturationPicker.Position = UDim2.new(s, -4, 1 - v, -4)
                 huePicker.Position = UDim2.new(h, -2, 0, 0)
                 updateColor()
             end
@@ -2227,6 +2558,25 @@ function Library:AddColorPicker(options)
     colorDisplay.MouseButton1Click:Connect(function()
         pickerOpen = not pickerOpen
         picker.Visible = pickerOpen
+        if pickerOpen then
+            Util:Tween(frameStroke, {Color = Theme.Accent, Transparency = 0.5}, 0.15)
+            Util:Tween(displayStroke, {Color = Theme.Accent}, 0.15)
+        else
+            Util:Tween(frameStroke, {Color = Theme.Border, Transparency = 0}, 0.15)
+            Util:Tween(displayStroke, {Color = Theme.Border}, 0.15)
+        end
+    end)
+    
+    frame.MouseEnter:Connect(function()
+        if not pickerOpen then
+            Util:Tween(frameStroke, {Transparency = 0.5}, 0.1)
+        end
+    end)
+    
+    frame.MouseLeave:Connect(function()
+        if not pickerOpen then
+            Util:Tween(frameStroke, {Transparency = 0}, 0.1)
+        end
     end)
     
     if flag then
@@ -2238,7 +2588,7 @@ function Library:AddColorPicker(options)
         SetValue = function(color)
             currentColor = color
             h, s, v = rgbToHsv(color)
-            saturationPicker.Position = UDim2.new(s, -3, 1 - v, -3)
+            saturationPicker.Position = UDim2.new(s, -4, 1 - v, -4)
             huePicker.Position = UDim2.new(h, -2, 0, 0)
             updateColor()
         end,
@@ -2266,9 +2616,9 @@ function Library:SaveConfig(name)
     end)
     
     if success then
-        Library:Notify("Success", "Configuration saved", 2)
+        Library:Notify("Success", "Configuration saved", 2, "success")
     else
-        Library:Notify("Error", "Failed to save config", 2)
+        Library:Notify("Error", "Failed to save config", 2, "error")
     end
 end
 
@@ -2292,9 +2642,9 @@ function Library:LoadConfig(name)
     end)
     
     if success then
-        Library:Notify("Success", "Configuration loaded", 2)
+        Library:Notify("Success", "Configuration loaded", 2, "success")
     else
-        Library:Notify("Error", "Failed to load config", 2)
+        Library:Notify("Error", "Failed to load config", 2, "error")
     end
 end
 
@@ -2304,7 +2654,6 @@ function Library:UpdateTheme(newTheme)
             Theme[k] = v
         end
     end
-    Library:Notify("Theme", "Theme updated", 1.5)
 end
 
 return Library
