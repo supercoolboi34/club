@@ -1639,6 +1639,134 @@ function Library:AddToggleWithColor(options)
         GetColor = function() return currentColor end
     }
 end
+
+function Library:AddToggle(options)
+    options = options or {}
+    local name = options.Name or "Toggle"
+    local flag = options.Flag
+    local default = options.Default or false
+    local callback = options.Callback or function() end
+    local tooltip = options.Tooltip
+    local mode = "Toggle"
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 32)
+    frame.BackgroundColor3 = BG3
+    frame.BorderSizePixel = 0
+    frame.Parent = self.Container
+    
+    Util:AddCorner(frame, 5)
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -55, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = TEXT
+    label.TextSize = 12
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(0, 38, 0, 20)
+    toggle.Position = UDim2.new(1, -44, 0.5, -10)
+    toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    toggle.BorderSizePixel = 0
+    toggle.Text = ""
+    toggle.AutoButtonColor = false
+    toggle.Parent = frame
+    
+    Util:AddCorner(toggle, 10)
+    Util:AddStroke(toggle, BORDER)
+    
+    local toggleGradient = Instance.new("UIGradient")
+    toggleGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 35))
+    }
+    toggleGradient.Rotation = 90
+    toggleGradient.Parent = toggle
+    
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.Position = UDim2.new(0, 2, 0.5, -8)
+    knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+    knob.BorderSizePixel = 0
+    knob.Parent = toggle
+    
+    Util:AddCorner(knob, 8)
+    
+    local state = default
+    
+    if flag then
+        Library.Flags[flag] = state
+        Library.Callbacks[flag] = callback
+    end
+    
+    local function set(v)
+        state = v
+        
+        if state then
+            Util:Tween(toggle, {BackgroundColor3 = ACCENT}, 0.15)
+            toggleGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, ACCENT),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 100, 220))
+            }
+            Util:Tween(knob, {Position = UDim2.new(1, -18, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.15)
+        else
+            Util:Tween(toggle, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.15)
+            toggleGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 35))
+            }
+            Util:Tween(knob, {Position = UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(200, 200, 200)}, 0.15)
+        end
+        
+        if flag then
+            Library.Flags[flag] = state
+        end
+        
+        callback(state)
+    end
+    
+    set(default)
+    
+    toggle.MouseButton1Click:Connect(function()
+        if mode == "Toggle" then
+            set(not state)
+        elseif mode == "Always" then
+            set(true)
+        end
+    end)
+    
+    if tooltip then
+        local info = Instance.new("TextButton")
+        info.Size = UDim2.new(0, 16, 0, 16)
+        info.Position = UDim2.new(1, -60, 0.5, -8)
+        info.BackgroundColor3 = BG1
+        info.BorderSizePixel = 0
+        info.Text = "i"
+        info.TextColor3 = TEXT_DIM
+        info.TextSize = 11
+        info.Font = Enum.Font.GothamBold
+        info.Parent = frame
+        
+        Util:AddCorner(info, 8)
+        Util:AddStroke(info, BORDER)
+    end
+    
+    Library:CreateContextMenu(frame, {
+        {Name = "Toggle", Callback = function() mode = "Toggle" Library:Notify("Mode", "Set to Toggle", 1) end},
+        {Name = "Hold", Callback = function() mode = "Hold" Library:Notify("Mode", "Set to Hold", 1) end},
+        {Name = "Always", Callback = function() mode = "Always" set(true) Library:Notify("Mode", "Set to Always", 1) end}
+    })
+    
+    return {
+        SetValue = set,
+        GetValue = function() return state end
+    }
+end
     options = options or {}
     local name = options.Name or "Toggle"
     local flag = options.Flag
