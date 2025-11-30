@@ -1,9 +1,5 @@
-print"its working"
-
 local Library = {}
 Library.__index = Library
-
-print"its working local"
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -12,8 +8,6 @@ local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 
-print"its working services"
-
 local ACCENT = Color3.fromRGB(120, 120, 255)
 local BG1 = Color3.fromRGB(15, 15, 15)
 local BG2 = Color3.fromRGB(20, 20, 20)
@@ -21,8 +15,6 @@ local BG3 = Color3.fromRGB(25, 25, 25)
 local TEXT = Color3.fromRGB(240, 240, 240)
 local TEXT_DIM = Color3.fromRGB(160, 160, 160)
 local BORDER = Color3.fromRGB(40, 40, 40)
-
-print"theme colors"
 
 local Util = {}
 
@@ -1763,115 +1755,6 @@ function Library:AddToggle(options)
         Util:AddCorner(info, 8)
         Util:AddStroke(info, BORDER)
     end
-    
-    Library:CreateContextMenu(frame, {
-        {Name = "Toggle", Callback = function() mode = "Toggle" Library:Notify("Mode", "Set to Toggle", 1) end},
-        {Name = "Hold", Callback = function() mode = "Hold" Library:Notify("Mode", "Set to Hold", 1) end},
-        {Name = "Always", Callback = function() mode = "Always" set(true) Library:Notify("Mode", "Set to Always", 1) end}
-    })
-    
-    return {
-        SetValue = set,
-        GetValue = function() return state end
-    }
-end
-    options = options or {}
-    local name = options.Name or "Toggle"
-    local flag = options.Flag
-    local default = options.Default or false
-    local callback = options.Callback or function() end
-    local mode = "Toggle"
-    
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 32)
-    frame.BackgroundColor3 = BG3
-    frame.BorderSizePixel = 0
-    frame.Parent = self.Container
-    
-    Util:AddCorner(frame, 5)
-    
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -55, 1, 0)
-    label.Position = UDim2.new(0, 12, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = name
-    label.TextColor3 = TEXT
-    label.TextSize = 12
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-    
-    local toggle = Instance.new("TextButton")
-    toggle.Size = UDim2.new(0, 38, 0, 20)
-    toggle.Position = UDim2.new(1, -44, 0.5, -10)
-    toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    toggle.BorderSizePixel = 0
-    toggle.Text = ""
-    toggle.AutoButtonColor = false
-    toggle.Parent = frame
-    
-    Util:AddCorner(toggle, 10)
-    Util:AddStroke(toggle, BORDER)
-    
-    local toggleGradient = Instance.new("UIGradient")
-    toggleGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 35))
-    }
-    toggleGradient.Rotation = 90
-    toggleGradient.Parent = toggle
-    
-    local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 16, 0, 16)
-    knob.Position = UDim2.new(0, 2, 0.5, -8)
-    knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-    knob.BorderSizePixel = 0
-    knob.Parent = toggle
-    
-    Util:AddCorner(knob, 8)
-    
-    local state = default
-    
-    if flag then
-        Library.Flags[flag] = state
-        Library.Callbacks[flag] = callback
-    end
-    
-    local function set(v)
-        state = v
-        
-        if state then
-            Util:Tween(toggle, {BackgroundColor3 = ACCENT}, 0.15)
-            toggleGradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, ACCENT),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 100, 220))
-            }
-            Util:Tween(knob, {Position = UDim2.new(1, -18, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.15)
-        else
-            Util:Tween(toggle, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.15)
-            toggleGradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 40)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 35))
-            }
-            Util:Tween(knob, {Position = UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(200, 200, 200)}, 0.15)
-        end
-        
-        if flag then
-            Library.Flags[flag] = state
-        end
-        
-        callback(state)
-    end
-    
-    set(default)
-    
-    toggle.MouseButton1Click:Connect(function()
-        if mode == "Toggle" then
-            set(not state)
-        elseif mode == "Always" then
-            set(true)
-        end
-    end)
     
     Library:CreateContextMenu(frame, {
         {Name = "Toggle", Callback = function() mode = "Toggle" Library:Notify("Mode", "Set to Toggle", 1) end},
