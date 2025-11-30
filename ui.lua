@@ -210,6 +210,8 @@ function Library:CreateWatermark(options)
     text.TextXAlignment = Enum.TextXAlignment.Left
     text.Parent = frame
     
+    Util:Drag(frame, frame)
+    
     local fps = 0
     local lastUpdate = tick()
     local frameCount = 0
@@ -254,6 +256,7 @@ function Library:CreateKeybindList()
     
     Util:AddCorner(frame, 6)
     Util:AddStroke(frame, BORDER)
+    Util:Drag(frame, frame)
     
     local accent = Instance.new("Frame")
     accent.Size = UDim2.new(1, 0, 0, 2)
@@ -280,7 +283,7 @@ end
 
 function Library:Create(options)
     options = options or {}
-    local name = options.Name or "Millennium"
+    local name = options.Name or "Club Penguin"
     
     if options.AccentColor then
         ACCENT = options.AccentColor
@@ -430,13 +433,35 @@ function Library:AddTab(name, icon)
     container.Visible = false
     container.Parent = self.Content
     
-    local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 8)
-    layout.Parent = container
+    local leftColumn = Instance.new("Frame")
+    leftColumn.Size = UDim2.new(0.5, -5, 1, 0)
+    leftColumn.Position = UDim2.new(0, 0, 0, 0)
+    leftColumn.BackgroundTransparency = 1
+    leftColumn.Parent = container
     
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        container.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
-    end)
+    local leftLayout = Instance.new("UIListLayout")
+    leftLayout.Padding = UDim.new(0, 8)
+    leftLayout.Parent = leftColumn
+    
+    local rightColumn = Instance.new("Frame")
+    rightColumn.Size = UDim2.new(0.5, -5, 1, 0)
+    rightColumn.Position = UDim2.new(0.5, 5, 0, 0)
+    rightColumn.BackgroundTransparency = 1
+    rightColumn.Parent = container
+    
+    local rightLayout = Instance.new("UIListLayout")
+    rightLayout.Padding = UDim.new(0, 8)
+    rightLayout.Parent = rightColumn
+    
+    local function updateCanvasSize()
+        local leftHeight = leftLayout.AbsoluteContentSize.Y
+        local rightHeight = rightLayout.AbsoluteContentSize.Y
+        local maxHeight = math.max(leftHeight, rightHeight)
+        container.CanvasSize = UDim2.new(0, 0, 0, maxHeight + 10)
+    end
+    
+    leftLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
+    rightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
     
     button.MouseButton1Click:Connect(function()
         for _, tab in pairs(self.Tabs) do
@@ -473,7 +498,10 @@ function Library:AddTab(name, icon)
         Indicator = indicator,
         Icon = iconLabel,
         Label = label,
-        Container = container
+        Container = container,
+        LeftColumn = leftColumn,
+        RightColumn = rightColumn,
+        CurrentColumn = "left"
     }
     
     self.Tabs[name] = tab
@@ -490,12 +518,26 @@ function Library:AddTab(name, icon)
     return setmetatable(tab, {__index = self})
 end
 
-function Library:AddSection(name)
+function Library:AddSection(name, side)
+    local targetColumn
+    
+    if side then
+        targetColumn = side == "left" and self.LeftColumn or self.RightColumn
+    else
+        if self.CurrentColumn == "left" then
+            targetColumn = self.LeftColumn
+            self.CurrentColumn = "right"
+        else
+            targetColumn = self.RightColumn
+            self.CurrentColumn = "left"
+        end
+    end
+    
     local section = Instance.new("Frame")
     section.Size = UDim2.new(1, 0, 0, 40)
     section.BackgroundColor3 = BG2
     section.BorderSizePixel = 0
-    section.Parent = self.Container
+    section.Parent = targetColumn
     
     Util:AddCorner(section, 6)
     Util:AddStroke(section, BORDER)
@@ -1174,10 +1216,10 @@ function Library:SaveConfig(name)
     end
     
     local success = pcall(function()
-        if not isfolder("MillenniumConfigs") then
-            makefolder("MillenniumConfigs")
+        if not isfolder("ClubPenguinConfigs") then
+            makefolder("ClubPenguinConfigs")
         end
-        writefile("MillenniumConfigs/" .. name .. ".json", HttpService:JSONEncode(config))
+        writefile("ClubPenguinConfigs/" .. name .. ".json", HttpService:JSONEncode(config))
     end)
     
     if success then
@@ -1189,7 +1231,7 @@ end
 
 function Library:LoadConfig(name)
     local success = pcall(function()
-        local data = readfile("MillenniumConfigs/" .. name .. ".json")
+        local data = readfile("ClubPenguinConfigs/" .. name .. ".json")
         local config = HttpService:JSONDecode(data)
         
         for flag, value in pairs(config) do
