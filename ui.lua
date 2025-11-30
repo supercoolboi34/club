@@ -56,13 +56,25 @@ function Util:Drag(frame, handle)
     end)
 end
 
-function Util:Resize(frame)
+function Util:Resize(frame, glowIndicator)
     local resizing, startPos, startSize
     local handle = Instance.new("Frame")
-    handle.Size = UDim2.new(0, 10, 0, 10)
-    handle.Position = UDim2.new(1, -10, 1, -10)
+    handle.Size = UDim2.new(0, 15, 0, 15)
+    handle.Position = UDim2.new(1, -15, 1, -15)
     handle.BackgroundTransparency = 1
     handle.Parent = frame
+    
+    handle.MouseEnter:Connect(function()
+        if glowIndicator then
+            Util:Tween(glowIndicator, {ImageTransparency = 0.3}, 0.2)
+        end
+    end)
+    
+    handle.MouseLeave:Connect(function()
+        if glowIndicator then
+            Util:Tween(glowIndicator, {ImageTransparency = 0.8}, 0.2)
+        end
+    end)
     
     handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -283,14 +295,14 @@ end
 
 function Library:Create(options)
     options = options or {}
-    local name = options.Name or "Club Penguin"
+    local name = options.Name or "Club"
     
     if options.AccentColor then
         ACCENT = options.AccentColor
     end
     
     local gui = Instance.new("ScreenGui")
-    gui.Name = "MillenniumUI"
+    gui.Name = "ClubUI"
     gui.Parent = CoreGui
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
@@ -304,7 +316,22 @@ function Library:Create(options)
     
     Util:AddCorner(main, 8)
     Util:AddStroke(main, BORDER, 1.5)
-    Util:AddShadow(main)
+    
+    local shadow = Util:AddShadow(main)
+    
+    local resizeGlow = Instance.new("ImageLabel")
+    resizeGlow.Name = "ResizeGlow"
+    resizeGlow.Size = UDim2.new(0, 40, 0, 40)
+    resizeGlow.Position = UDim2.new(1, -20, 1, -20)
+    resizeGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+    resizeGlow.BackgroundTransparency = 1
+    resizeGlow.Image = "rbxassetid://1316045217"
+    resizeGlow.ImageColor3 = ACCENT
+    resizeGlow.ImageTransparency = 0.8
+    resizeGlow.ScaleType = Enum.ScaleType.Slice
+    resizeGlow.SliceCenter = Rect.new(10, 10, 118, 118)
+    resizeGlow.ZIndex = 5
+    resizeGlow.Parent = main
     
     local topbar = Instance.new("Frame")
     topbar.Size = UDim2.new(1, 0, 0, 40)
@@ -339,6 +366,23 @@ function Library:Create(options)
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = topbar
     
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, ACCENT),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200, 200, 255)),
+        ColorSequenceKeypoint.new(1, ACCENT)
+    }
+    gradient.Parent = title
+    
+    task.spawn(function()
+        while true do
+            for i = 0, 360, 2 do
+                gradient.Rotation = i
+                task.wait(0.03)
+            end
+        end
+    end)
+    
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 150, 1, -40)
     sidebar.Position = UDim2.new(0, 0, 0, 40)
@@ -366,7 +410,7 @@ function Library:Create(options)
     content.Parent = main
     
     Util:Drag(main, topbar)
-    Util:Resize(main)
+    Util:Resize(main, resizeGlow)
     
     Library.Gui = gui
     Library.Main = main
@@ -534,45 +578,31 @@ function Library:AddSection(name, side)
     end
     
     local section = Instance.new("Frame")
-    section.Size = UDim2.new(1, 0, 0, 40)
+    section.Size = UDim2.new(1, 0, 0, 30)
     section.BackgroundColor3 = BG2
     section.BorderSizePixel = 0
+    section.AutomaticSize = Enum.AutomaticSize.Y
     section.Parent = targetColumn
     
     Util:AddCorner(section, 6)
     Util:AddStroke(section, BORDER)
     
-    local header = Instance.new("Frame")
-    header.Size = UDim2.new(1, 0, 0, 30)
+    local header = Instance.new("TextLabel")
+    header.Size = UDim2.new(1, -20, 0, 25)
+    header.Position = UDim2.new(0, 10, 0, 5)
     header.BackgroundTransparency = 1
+    header.Text = name
+    header.TextColor3 = TEXT
+    header.TextSize = 13
+    header.Font = Enum.Font.GothamBold
+    header.TextXAlignment = Enum.TextXAlignment.Left
     header.Parent = section
     
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -40, 1, 0)
-    label.Position = UDim2.new(0, 12, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = name
-    label.TextColor3 = TEXT
-    label.TextSize = 13
-    label.Font = Enum.Font.GothamBold
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = header
-    
-    local toggle = Instance.new("TextButton")
-    toggle.Size = UDim2.new(0, 20, 0, 20)
-    toggle.Position = UDim2.new(1, -28, 0, 5)
-    toggle.BackgroundTransparency = 1
-    toggle.Text = "▼"
-    toggle.TextColor3 = TEXT_DIM
-    toggle.TextSize = 10
-    toggle.Font = Enum.Font.GothamBold
-    toggle.Parent = header
-    
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 1, -30)
+    container.Size = UDim2.new(1, 0, 0, 0)
     container.Position = UDim2.new(0, 0, 0, 30)
     container.BackgroundTransparency = 1
-    container.ClipsDescendants = true
+    container.AutomaticSize = Enum.AutomaticSize.Y
     container.Parent = section
     
     local layout = Instance.new("UIListLayout")
@@ -585,18 +615,6 @@ function Library:AddSection(name, side)
     padding.PaddingTop = UDim.new(0, 4)
     padding.PaddingBottom = UDim.new(0, 8)
     padding.Parent = container
-    
-    local open = true
-    
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        section.Size = UDim2.new(1, 0, 0, open and (layout.AbsoluteContentSize.Y + 46) or 40)
-    end)
-    
-    toggle.MouseButton1Click:Connect(function()
-        open = not open
-        toggle.Text = open and "▼" or "▶"
-        Util:Tween(section, {Size = UDim2.new(1, 0, 0, open and (layout.AbsoluteContentSize.Y + 46) or 40)}, 0.15)
-    end)
     
     return {
         Frame = section,
@@ -1216,10 +1234,10 @@ function Library:SaveConfig(name)
     end
     
     local success = pcall(function()
-        if not isfolder("ClubPenguinConfigs") then
-            makefolder("ClubPenguinConfigs")
+        if not isfolder("ClubConfigs") then
+            makefolder("ClubConfigs")
         end
-        writefile("ClubPenguinConfigs/" .. name .. ".json", HttpService:JSONEncode(config))
+        writefile("ClubConfigs/" .. name .. ".json", HttpService:JSONEncode(config))
     end)
     
     if success then
@@ -1231,7 +1249,7 @@ end
 
 function Library:LoadConfig(name)
     local success = pcall(function()
-        local data = readfile("ClubPenguinConfigs/" .. name .. ".json")
+        local data = readfile("ClubConfigs/" .. name .. ".json")
         local config = HttpService:JSONDecode(data)
         
         for flag, value in pairs(config) do
@@ -1254,7 +1272,7 @@ end
 function Library:AddConfigTab()
     local tab = self:AddTab("Config", "")
     
-    local saveSection = tab:AddSection("Save Configuration")
+    local saveSection = tab:AddSection("Save Configuration", "left")
     
     local nameBox = Instance.new("Frame")
     nameBox.Size = UDim2.new(1, 0, 0, 50)
@@ -1318,7 +1336,7 @@ function Library:AddConfigTab()
         end
     end)
     
-    local loadSection = tab:AddSection("Load Configuration")
+    local loadSection = tab:AddSection("Load Configuration", "right")
     
     local loadBtn = Instance.new("TextButton")
     loadBtn.Size = UDim2.new(1, 0, 0, 32)
