@@ -59,14 +59,14 @@ end
 function Util:Resize(frame, glowIndicator)
     local resizing, startPos, startSize
     local handle = Instance.new("Frame")
-    handle.Size = UDim2.new(0, 20, 0, 20)
-    handle.Position = UDim2.new(1, -20, 1, -20)
+    handle.Size = UDim2.new(0, 25, 0, 25)
+    handle.Position = UDim2.new(1, -25, 1, -25)
     handle.BackgroundTransparency = 1
     handle.Parent = frame
     
     handle.MouseEnter:Connect(function()
         if glowIndicator then
-            Util:Tween(glowIndicator, {ImageTransparency = 0.3}, 0.2)
+            Util:Tween(glowIndicator, {ImageTransparency = 0.2}, 0.2)
         end
     end)
     
@@ -93,7 +93,7 @@ function Util:Resize(frame, glowIndicator)
     UserInputService.InputChanged:Connect(function(input)
         if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - startPos
-            frame.Size = UDim2.new(0, math.max(500, startSize.X.Offset + delta.X), 0, math.max(400, startSize.Y.Offset + delta.Y))
+            frame.Size = UDim2.new(0, math.max(650, startSize.X.Offset + delta.X), 0, math.max(500, startSize.Y.Offset + delta.Y))
         end
     end)
 end
@@ -141,50 +141,72 @@ function Library:Notify(title, text, duration)
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 280, 0, 0)
-    frame.Position = UDim2.new(1, -290, 1, 10)
+    frame.Size = UDim2.new(0, 300, 0, 0)
+    frame.Position = UDim2.new(1, -310, 1, 10)
     frame.BackgroundColor3 = BG2
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = true
     frame.Parent = gui
     
-    Util:AddCorner(frame, 6)
-    Util:AddStroke(frame, BORDER)
+    Util:AddCorner(frame, 8)
+    Util:AddStroke(frame, BORDER, 1.5)
+    
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, BG2),
+        ColorSequenceKeypoint.new(1, BG1)
+    }
+    gradient.Rotation = 45
+    gradient.Parent = frame
     
     local accent = Instance.new("Frame")
-    accent.Size = UDim2.new(1, 0, 0, 2)
+    accent.Size = UDim2.new(1, 0, 0, 3)
     accent.BackgroundColor3 = ACCENT
     accent.BorderSizePixel = 0
     accent.Parent = frame
     
+    Util:AddCorner(accent, 8)
+    
+    local accentCover = Instance.new("Frame")
+    accentCover.Size = UDim2.new(1, 0, 0, 5)
+    accentCover.Position = UDim2.new(0, 0, 1, -5)
+    accentCover.BackgroundColor3 = ACCENT
+    accentCover.BorderSizePixel = 0
+    accentCover.Parent = accent
+    
     local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -20, 0, 20)
-    titleLabel.Position = UDim2.new(0, 10, 0, 10)
+    titleLabel.Size = UDim2.new(1, -30, 0, 22)
+    titleLabel.Position = UDim2.new(0, 15, 0, 15)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = title
     titleLabel.TextColor3 = TEXT
-    titleLabel.TextSize = 13
+    titleLabel.TextSize = 14
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = frame
     
     local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, -20, 0, 30)
-    textLabel.Position = UDim2.new(0, 10, 0, 30)
+    textLabel.Size = UDim2.new(1, -30, 0, 0)
+    textLabel.Position = UDim2.new(0, 15, 0, 40)
     textLabel.BackgroundTransparency = 1
     textLabel.Text = text
     textLabel.TextColor3 = TEXT_DIM
-    textLabel.TextSize = 11
+    textLabel.TextSize = 12
     textLabel.Font = Enum.Font.Gotham
     textLabel.TextXAlignment = Enum.TextXAlignment.Left
     textLabel.TextYAlignment = Enum.TextYAlignment.Top
     textLabel.TextWrapped = true
+    textLabel.AutomaticSize = Enum.AutomaticSize.Y
     textLabel.Parent = frame
     
-    Util:Tween(frame, {Size = UDim2.new(0, 280, 0, 70), Position = UDim2.new(1, -290, 1, -80)}, 0.3)
+    task.wait()
+    local textHeight = textLabel.AbsoluteSize.Y
+    local totalHeight = 65 + textHeight
+    
+    Util:Tween(frame, {Size = UDim2.new(0, 300, 0, totalHeight), Position = UDim2.new(1, -310, 1, -totalHeight - 10)}, 0.4)
     
     task.delay(duration or 3, function()
-        Util:Tween(frame, {Position = UDim2.new(1, -290, 1, 10)}, 0.3)
+        Util:Tween(frame, {Position = UDim2.new(1, -310, 1, 10)}, 0.3)
         task.wait(0.3)
         gui:Destroy()
     end)
@@ -197,14 +219,14 @@ function Library:CreateWatermark(options)
     gui.Parent = CoreGui
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 200, 0, 25)
+    frame.Size = UDim2.new(0, 220, 0, 28)
     frame.Position = UDim2.new(0, 10, 0, 10)
     frame.BackgroundColor3 = BG2
     frame.BorderSizePixel = 0
     frame.Parent = gui
     
-    Util:AddCorner(frame, 4)
-    Util:AddStroke(frame, BORDER)
+    Util:AddCorner(frame, 6)
+    Util:AddStroke(frame, BORDER, 1.5)
     
     local accent = Instance.new("Frame")
     accent.Size = UDim2.new(1, 0, 0, 2)
@@ -213,11 +235,11 @@ function Library:CreateWatermark(options)
     accent.Parent = frame
     
     local text = Instance.new("TextLabel")
-    text.Size = UDim2.new(1, -10, 1, -2)
-    text.Position = UDim2.new(0, 5, 0, 2)
+    text.Size = UDim2.new(1, -12, 1, -2)
+    text.Position = UDim2.new(0, 6, 0, 2)
     text.BackgroundTransparency = 1
     text.TextColor3 = TEXT
-    text.TextSize = 11
+    text.TextSize = 12
     text.Font = Enum.Font.GothamBold
     text.TextXAlignment = Enum.TextXAlignment.Left
     text.Parent = frame
@@ -259,15 +281,15 @@ function Library:CreateKeybindList()
     gui.Parent = CoreGui
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 180, 0, 30)
-    frame.Position = UDim2.new(1, -190, 0, 50)
+    frame.Size = UDim2.new(0, 200, 0, 35)
+    frame.Position = UDim2.new(1, -210, 0, 50)
     frame.BackgroundColor3 = BG2
     frame.BorderSizePixel = 0
     frame.Visible = false
     frame.Parent = gui
     
     Util:AddCorner(frame, 6)
-    Util:AddStroke(frame, BORDER)
+    Util:AddStroke(frame, BORDER, 1.5)
     Util:Drag(frame, frame)
     
     local accent = Instance.new("Frame")
@@ -277,12 +299,12 @@ function Library:CreateKeybindList()
     accent.Parent = frame
     
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 25)
+    title.Size = UDim2.new(1, 0, 0, 30)
     title.Position = UDim2.new(0, 0, 0, 5)
     title.BackgroundTransparency = 1
     title.Text = "Keybinds"
     title.TextColor3 = TEXT
-    title.TextSize = 12
+    title.TextSize = 13
     title.Font = Enum.Font.GothamBold
     title.Parent = frame
     
@@ -307,8 +329,8 @@ function Library:Create(options)
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
     local main = Instance.new("Frame")
-    main.Size = UDim2.new(0, 750, 0, 500)
-    main.Position = UDim2.new(0.5, -375, 0.5, -250)
+    main.Size = UDim2.new(0, 800, 0, 550)
+    main.Position = UDim2.new(0.5, -400, 0.5, -275)
     main.BackgroundColor3 = BG1
     main.BorderSizePixel = 0
     main.ClipsDescendants = true
@@ -321,8 +343,8 @@ function Library:Create(options)
     
     local resizeGlow = Instance.new("ImageLabel")
     resizeGlow.Name = "ResizeGlow"
-    resizeGlow.Size = UDim2.new(0, 40, 0, 40)
-    resizeGlow.Position = UDim2.new(1, -20, 1, -20)
+    resizeGlow.Size = UDim2.new(0, 50, 0, 50)
+    resizeGlow.Position = UDim2.new(1, -25, 1, -25)
     resizeGlow.AnchorPoint = Vector2.new(0.5, 0.5)
     resizeGlow.BackgroundTransparency = 1
     resizeGlow.Image = "rbxassetid://1316045217"
@@ -334,7 +356,7 @@ function Library:Create(options)
     resizeGlow.Parent = main
     
     local topbar = Instance.new("Frame")
-    topbar.Size = UDim2.new(1, 0, 0, 40)
+    topbar.Size = UDim2.new(1, 0, 0, 45)
     topbar.BackgroundColor3 = BG2
     topbar.BorderSizePixel = 0
     topbar.Parent = main
@@ -357,11 +379,11 @@ function Library:Create(options)
     
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0, 200, 1, 0)
-    title.Position = UDim2.new(0, 15, 0, 0)
+    title.Position = UDim2.new(0, 18, 0, 0)
     title.BackgroundTransparency = 1
     title.Text = name
     title.TextColor3 = TEXT
-    title.TextSize = 18
+    title.TextSize = 20
     title.Font = Enum.Font.GothamBold
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = topbar
@@ -384,8 +406,8 @@ function Library:Create(options)
     end)
     
     local sidebar = Instance.new("Frame")
-    sidebar.Size = UDim2.new(0, 150, 1, -40)
-    sidebar.Position = UDim2.new(0, 0, 0, 40)
+    sidebar.Size = UDim2.new(0, 160, 1, -45)
+    sidebar.Position = UDim2.new(0, 0, 0, 45)
     sidebar.BackgroundColor3 = BG2
     sidebar.BorderSizePixel = 0
     sidebar.Parent = main
@@ -404,8 +426,8 @@ function Library:Create(options)
     tabLayout.Parent = tabContainer
     
     local content = Instance.new("Frame")
-    content.Size = UDim2.new(1, -150, 1, -40)
-    content.Position = UDim2.new(0, 150, 0, 40)
+    content.Size = UDim2.new(1, -160, 1, -45)
+    content.Position = UDim2.new(0, 160, 0, 45)
     content.BackgroundTransparency = 1
     content.Parent = main
     
@@ -428,18 +450,18 @@ end
 
 function Library:AddTab(name, icon)
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, -10, 0, 35)
+    button.Size = UDim2.new(1, -10, 0, 38)
     button.BackgroundColor3 = BG3
     button.BorderSizePixel = 0
     button.Text = ""
     button.AutoButtonColor = false
     button.Parent = self.Sidebar
     
-    Util:AddCorner(button, 5)
+    Util:AddCorner(button, 6)
     
     local indicator = Instance.new("Frame")
-    indicator.Size = UDim2.new(0, 2, 1, -8)
-    indicator.Position = UDim2.new(0, 4, 0, 4)
+    indicator.Size = UDim2.new(0, 3, 1, -10)
+    indicator.Position = UDim2.new(0, 5, 0, 5)
     indicator.BackgroundColor3 = ACCENT
     indicator.BorderSizePixel = 0
     indicator.Visible = false
@@ -448,20 +470,20 @@ function Library:AddTab(name, icon)
     Util:AddCorner(indicator, 2)
     
     local iconLabel = Instance.new("ImageLabel")
-    iconLabel.Size = UDim2.new(0, 18, 0, 18)
-    iconLabel.Position = UDim2.new(0, 12, 0.5, -9)
+    iconLabel.Size = UDim2.new(0, 20, 0, 20)
+    iconLabel.Position = UDim2.new(0, 14, 0.5, -10)
     iconLabel.BackgroundTransparency = 1
     iconLabel.Image = icon or ""
     iconLabel.ImageColor3 = TEXT_DIM
     iconLabel.Parent = button
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -45, 1, 0)
-    label.Position = UDim2.new(0, 40, 0, 0)
+    label.Size = UDim2.new(1, -50, 1, 0)
+    label.Position = UDim2.new(0, 42, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = name
     label.TextColor3 = TEXT_DIM
-    label.TextSize = 12
+    label.TextSize = 13
     label.Font = Enum.Font.GothamSemibold
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = button
@@ -471,7 +493,7 @@ function Library:AddTab(name, icon)
     container.Position = UDim2.new(0, 10, 0, 10)
     container.BackgroundTransparency = 1
     container.BorderSizePixel = 0
-    container.ScrollBarThickness = 3
+    container.ScrollBarThickness = 4
     container.ScrollBarImageColor3 = ACCENT
     container.CanvasSize = UDim2.new(0, 0, 0, 0)
     container.Visible = false
@@ -484,7 +506,7 @@ function Library:AddTab(name, icon)
     leftColumn.Parent = container
     
     local leftLayout = Instance.new("UIListLayout")
-    leftLayout.Padding = UDim.new(0, 8)
+    leftLayout.Padding = UDim.new(0, 10)
     leftLayout.Parent = leftColumn
     
     local rightColumn = Instance.new("Frame")
@@ -494,14 +516,14 @@ function Library:AddTab(name, icon)
     rightColumn.Parent = container
     
     local rightLayout = Instance.new("UIListLayout")
-    rightLayout.Padding = UDim.new(0, 8)
+    rightLayout.Padding = UDim.new(0, 10)
     rightLayout.Parent = rightColumn
     
     local function updateCanvasSize()
         local leftHeight = leftLayout.AbsoluteContentSize.Y
         local rightHeight = rightLayout.AbsoluteContentSize.Y
         local maxHeight = math.max(leftHeight, rightHeight)
-        container.CanvasSize = UDim2.new(0, 0, 0, maxHeight + 10)
+        container.CanvasSize = UDim2.new(0, 0, 0, maxHeight + 20)
     end
     
     leftLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
@@ -578,7 +600,7 @@ function Library:AddSection(name, side)
     end
     
     local section = Instance.new("Frame")
-    section.Size = UDim2.new(1, 0, 0, 30)
+    section.Size = UDim2.new(1, 0, 0, 35)
     section.BackgroundColor3 = BG2
     section.BorderSizePixel = 0
     section.AutomaticSize = Enum.AutomaticSize.Y
@@ -588,32 +610,32 @@ function Library:AddSection(name, side)
     Util:AddStroke(section, BORDER)
     
     local header = Instance.new("TextLabel")
-    header.Size = UDim2.new(1, -20, 0, 25)
-    header.Position = UDim2.new(0, 10, 0, 5)
+    header.Size = UDim2.new(1, -20, 0, 28)
+    header.Position = UDim2.new(0, 12, 0, 7)
     header.BackgroundTransparency = 1
     header.Text = name
     header.TextColor3 = TEXT
-    header.TextSize = 13
+    header.TextSize = 14
     header.Font = Enum.Font.GothamBold
     header.TextXAlignment = Enum.TextXAlignment.Left
     header.Parent = section
     
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, 0, 0, 0)
-    container.Position = UDim2.new(0, 0, 0, 30)
+    container.Position = UDim2.new(0, 0, 0, 35)
     container.BackgroundTransparency = 1
     container.AutomaticSize = Enum.AutomaticSize.Y
     container.Parent = section
     
     local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 4)
+    layout.Padding = UDim.new(0, 5)
     layout.Parent = container
     
     local padding = Instance.new("UIPadding")
-    padding.PaddingLeft = UDim.new(0, 8)
-    padding.PaddingRight = UDim.new(0, 8)
-    padding.PaddingTop = UDim.new(0, 4)
-    padding.PaddingBottom = UDim.new(0, 8)
+    padding.PaddingLeft = UDim.new(0, 10)
+    padding.PaddingRight = UDim.new(0, 10)
+    padding.PaddingTop = UDim.new(0, 5)
+    padding.PaddingBottom = UDim.new(0, 10)
     padding.Parent = container
     
     return setmetatable({
@@ -631,7 +653,7 @@ function Library:AddToggle(options)
     local tooltip = options.Tooltip
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 30)
+    frame.Size = UDim2.new(1, 0, 0, 32)
     frame.BackgroundColor3 = BG3
     frame.BorderSizePixel = 0
     frame.Parent = self.Container
@@ -639,36 +661,36 @@ function Library:AddToggle(options)
     Util:AddCorner(frame, 5)
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -50, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Size = UDim2.new(1, -55, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = name
     label.TextColor3 = TEXT
-    label.TextSize = 11
+    label.TextSize = 12
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     
     local toggle = Instance.new("TextButton")
-    toggle.Size = UDim2.new(0, 36, 0, 18)
-    toggle.Position = UDim2.new(1, -42, 0.5, -9)
+    toggle.Size = UDim2.new(0, 38, 0, 20)
+    toggle.Position = UDim2.new(1, -44, 0.5, -10)
     toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     toggle.BorderSizePixel = 0
     toggle.Text = ""
     toggle.AutoButtonColor = false
     toggle.Parent = frame
     
-    Util:AddCorner(toggle, 9)
+    Util:AddCorner(toggle, 10)
     Util:AddStroke(toggle, BORDER)
     
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 14, 0, 14)
-    knob.Position = UDim2.new(0, 2, 0.5, -7)
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.Position = UDim2.new(0, 2, 0.5, -8)
     knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
     knob.BorderSizePixel = 0
     knob.Parent = toggle
     
-    Util:AddCorner(knob, 7)
+    Util:AddCorner(knob, 8)
     
     local state = default
     
@@ -682,10 +704,10 @@ function Library:AddToggle(options)
         
         if state then
             Util:Tween(toggle, {BackgroundColor3 = ACCENT}, 0.15)
-            Util:Tween(knob, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.15)
+            Util:Tween(knob, {Position = UDim2.new(1, -18, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.15)
         else
             Util:Tween(toggle, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.15)
-            Util:Tween(knob, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(200, 200, 200)}, 0.15)
+            Util:Tween(knob, {Position = UDim2.new(0, 2, 0.5, -8), BackgroundColor3 = Color3.fromRGB(200, 200, 200)}, 0.15)
         end
         
         if flag then
@@ -703,17 +725,17 @@ function Library:AddToggle(options)
     
     if tooltip then
         local info = Instance.new("TextButton")
-        info.Size = UDim2.new(0, 14, 0, 14)
-        info.Position = UDim2.new(1, -56, 0.5, -7)
+        info.Size = UDim2.new(0, 16, 0, 16)
+        info.Position = UDim2.new(1, -60, 0.5, -8)
         info.BackgroundColor3 = BG1
         info.BorderSizePixel = 0
         info.Text = "i"
         info.TextColor3 = TEXT_DIM
-        info.TextSize = 10
+        info.TextSize = 11
         info.Font = Enum.Font.GothamBold
         info.Parent = frame
         
-        Util:AddCorner(info, 7)
+        Util:AddCorner(info, 8)
         Util:AddStroke(info, BORDER)
     end
     
@@ -732,7 +754,7 @@ function Library:AddDropdown(options)
     local callback = options.Callback or function() end
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 50)
+    frame.Size = UDim2.new(1, 0, 0, 54)
     frame.BackgroundColor3 = BG3
     frame.BorderSizePixel = 0
     frame.Parent = self.Container
@@ -740,19 +762,19 @@ function Library:AddDropdown(options)
     Util:AddCorner(frame, 5)
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -20, 0, 18)
-    label.Position = UDim2.new(0, 10, 0, 4)
+    label.Size = UDim2.new(1, -20, 0, 20)
+    label.Position = UDim2.new(0, 12, 0, 5)
     label.BackgroundTransparency = 1
     label.Text = name
     label.TextColor3 = TEXT_DIM
-    label.TextSize = 10
+    label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, -20, 0, 24)
-    button.Position = UDim2.new(0, 10, 0, 22)
+    button.Size = UDim2.new(1, -24, 0, 26)
+    button.Position = UDim2.new(0, 12, 0, 24)
     button.BackgroundColor3 = BG1
     button.BorderSizePixel = 0
     button.Text = ""
@@ -764,7 +786,7 @@ function Library:AddDropdown(options)
     
     local selected = Instance.new("TextLabel")
     selected.Size = UDim2.new(1, -30, 1, 0)
-    selected.Position = UDim2.new(0, 8, 0, 0)
+    selected.Position = UDim2.new(0, 10, 0, 0)
     selected.BackgroundTransparency = 1
     selected.Text = default or "Select..."
     selected.TextColor3 = TEXT
@@ -780,13 +802,13 @@ function Library:AddDropdown(options)
     arrow.BackgroundTransparency = 1
     arrow.Text = "▼"
     arrow.TextColor3 = TEXT_DIM
-    arrow.TextSize = 9
+    arrow.TextSize = 10
     arrow.Font = Enum.Font.GothamBold
     arrow.Parent = button
     
     local dropdown = Instance.new("Frame")
-    dropdown.Size = UDim2.new(1, -20, 0, 0)
-    dropdown.Position = UDim2.new(0, 10, 1, 4)
+    dropdown.Size = UDim2.new(1, -24, 0, 0)
+    dropdown.Position = UDim2.new(0, 12, 1, 5)
     dropdown.BackgroundColor3 = BG1
     dropdown.BorderSizePixel = 0
     dropdown.Visible = false
@@ -818,12 +840,12 @@ function Library:AddDropdown(options)
         
         for _, item in pairs(newList) do
             local option = Instance.new("TextButton")
-            option.Size = UDim2.new(1, 0, 0, 22)
+            option.Size = UDim2.new(1, 0, 0, 24)
             option.BackgroundColor3 = BG1
             option.BorderSizePixel = 0
             option.Text = item
             option.TextColor3 = TEXT
-            option.TextSize = 10
+            option.TextSize = 11
             option.Font = Enum.Font.Gotham
             option.AutoButtonColor = false
             option.Parent = dropdown
@@ -847,16 +869,16 @@ function Library:AddDropdown(options)
                 callback(value)
                 
                 open = false
-                Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, 0)}, 0.15)
+                Util:Tween(dropdown, {Size = UDim2.new(1, -24, 0, 0)}, 0.15)
                 task.wait(0.15)
                 dropdown.Visible = false
                 arrow.Text = "▼"
             end)
         end
         
-        local height = math.min(#newList * 23, 130)
+        local height = math.min(#newList * 25, 150)
         if open then
-            dropdown.Size = UDim2.new(1, -20, 0, height)
+            dropdown.Size = UDim2.new(1, -24, 0, height)
         end
     end
     
@@ -865,11 +887,11 @@ function Library:AddDropdown(options)
         
         if open then
             dropdown.Visible = true
-            local height = math.min(#list * 23, 130)
-            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, height)}, 0.15)
+            local height = math.min(#list * 25, 150)
+            Util:Tween(dropdown, {Size = UDim2.new(1, -24, 0, height)}, 0.15)
             arrow.Text = "▲"
         else
-            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, 0)}, 0.15)
+            Util:Tween(dropdown, {Size = UDim2.new(1, -24, 0, 0)}, 0.15)
             task.wait(0.15)
             dropdown.Visible = false
             arrow.Text = "▼"
@@ -904,7 +926,7 @@ function Library:AddMultiDropdown(options)
     local callback = options.Callback or function() end
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 50)
+    frame.Size = UDim2.new(1, 0, 0, 54)
     frame.BackgroundColor3 = BG3
     frame.BorderSizePixel = 0
     frame.Parent = self.Container
@@ -912,19 +934,19 @@ function Library:AddMultiDropdown(options)
     Util:AddCorner(frame, 5)
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -20, 0, 18)
-    label.Position = UDim2.new(0, 10, 0, 4)
+    label.Size = UDim2.new(1, -20, 0, 20)
+    label.Position = UDim2.new(0, 12, 0, 5)
     label.BackgroundTransparency = 1
     label.Text = name
     label.TextColor3 = TEXT_DIM
-    label.TextSize = 10
+    label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, -20, 0, 24)
-    button.Position = UDim2.new(0, 10, 0, 22)
+    button.Size = UDim2.new(1, -24, 0, 26)
+    button.Position = UDim2.new(0, 12, 0, 24)
     button.BackgroundColor3 = BG1
     button.BorderSizePixel = 0
     button.Text = ""
@@ -936,7 +958,7 @@ function Library:AddMultiDropdown(options)
     
     local selected = Instance.new("TextLabel")
     selected.Size = UDim2.new(1, -30, 1, 0)
-    selected.Position = UDim2.new(0, 8, 0, 0)
+    selected.Position = UDim2.new(0, 10, 0, 0)
     selected.BackgroundTransparency = 1
     selected.Text = "Select..."
     selected.TextColor3 = TEXT
@@ -952,19 +974,19 @@ function Library:AddMultiDropdown(options)
     arrow.BackgroundTransparency = 1
     arrow.Text = "▼"
     arrow.TextColor3 = TEXT_DIM
-    arrow.TextSize = 9
+    arrow.TextSize = 10
     arrow.Font = Enum.Font.GothamBold
     arrow.Parent = button
     
     local dropdown = Instance.new("ScrollingFrame")
-    dropdown.Size = UDim2.new(1, -20, 0, 0)
-    dropdown.Position = UDim2.new(0, 10, 1, 4)
+    dropdown.Size = UDim2.new(1, -24, 0, 0)
+    dropdown.Position = UDim2.new(0, 12, 1, 5)
     dropdown.BackgroundColor3 = BG1
     dropdown.BorderSizePixel = 0
     dropdown.Visible = false
     dropdown.ZIndex = 10
     dropdown.ClipsDescendants = true
-    dropdown.ScrollBarThickness = 3
+    dropdown.ScrollBarThickness = 4
     dropdown.ScrollBarImageColor3 = ACCENT
     dropdown.CanvasSize = UDim2.new(0, 0, 0, 0)
     dropdown.Parent = frame
@@ -1005,25 +1027,25 @@ function Library:AddMultiDropdown(options)
         
         for _, item in pairs(newList) do
             local option = Instance.new("Frame")
-            option.Size = UDim2.new(1, 0, 0, 22)
+            option.Size = UDim2.new(1, 0, 0, 24)
             option.BackgroundColor3 = BG1
             option.BorderSizePixel = 0
             option.Parent = dropdown
             
             local optButton = Instance.new("TextButton")
-            optButton.Size = UDim2.new(1, -25, 1, 0)
+            optButton.Size = UDim2.new(1, -28, 1, 0)
             optButton.BackgroundTransparency = 1
             optButton.Text = item
             optButton.TextColor3 = TEXT
-            optButton.TextSize = 10
+            optButton.TextSize = 11
             optButton.Font = Enum.Font.Gotham
             optButton.TextXAlignment = Enum.TextXAlignment.Left
             optButton.AutoButtonColor = false
             optButton.Parent = option
             
             local check = Instance.new("Frame")
-            check.Size = UDim2.new(0, 12, 0, 12)
-            check.Position = UDim2.new(1, -18, 0.5, -6)
+            check.Size = UDim2.new(0, 14, 0, 14)
+            check.Position = UDim2.new(1, -20, 0.5, -7)
             check.BackgroundColor3 = BG3
             check.BorderSizePixel = 0
             check.Parent = option
@@ -1036,7 +1058,7 @@ function Library:AddMultiDropdown(options)
             checkmark.BackgroundTransparency = 1
             checkmark.Text = "✓"
             checkmark.TextColor3 = ACCENT
-            checkmark.TextSize = 10
+            checkmark.TextSize = 11
             checkmark.Font = Enum.Font.GothamBold
             checkmark.Visible = values[item] or false
             checkmark.Parent = check
@@ -1072,11 +1094,11 @@ function Library:AddMultiDropdown(options)
         
         if open then
             dropdown.Visible = true
-            local height = math.min(dropLayout.AbsoluteContentSize.Y, 130)
-            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, height)}, 0.15)
+            local height = math.min(dropLayout.AbsoluteContentSize.Y, 150)
+            Util:Tween(dropdown, {Size = UDim2.new(1, -24, 0, height)}, 0.15)
             arrow.Text = "▲"
         else
-            Util:Tween(dropdown, {Size = UDim2.new(1, -20, 0, 0)}, 0.15)
+            Util:Tween(dropdown, {Size = UDim2.new(1, -24, 0, 0)}, 0.15)
             task.wait(0.15)
             dropdown.Visible = false
             arrow.Text = "▼"
@@ -1107,7 +1129,7 @@ function Library:AddKeybind(options)
     local callback = options.Callback or function() end
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 30)
+    frame.Size = UDim2.new(1, 0, 0, 32)
     frame.BackgroundColor3 = BG3
     frame.BorderSizePixel = 0
     frame.Parent = self.Container
@@ -1115,24 +1137,24 @@ function Library:AddKeybind(options)
     Util:AddCorner(frame, 5)
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -90, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Size = UDim2.new(1, -100, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = name
     label.TextColor3 = TEXT
-    label.TextSize = 11
+    label.TextSize = 12
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0, 70, 0, 20)
-    button.Position = UDim2.new(1, -76, 0.5, -10)
+    button.Size = UDim2.new(0, 75, 0, 22)
+    button.Position = UDim2.new(1, -82, 0.5, -11)
     button.BackgroundColor3 = BG1
     button.BorderSizePixel = 0
     button.Text = default and default.Name or "None"
     button.TextColor3 = TEXT
-    button.TextSize = 10
+    button.TextSize = 11
     button.Font = Enum.Font.Gotham
     button.AutoButtonColor = false
     button.Parent = frame
@@ -1241,7 +1263,7 @@ function Library:SaveConfig(name)
     end)
     
     if success then
-        Library:Notify("Config Saved", "Configuration saved successfully", 2)
+        Library:Notify("Success", "Configuration saved successfully", 2)
     else
         Library:Notify("Error", "Failed to save config", 2)
     end
@@ -1263,7 +1285,7 @@ function Library:LoadConfig(name)
     end)
     
     if success then
-        Library:Notify("Config Loaded", "Configuration loaded successfully", 2)
+        Library:Notify("Success", "Configuration loaded successfully", 2)
     else
         Library:Notify("Error", "Failed to load config", 2)
     end
@@ -1275,7 +1297,7 @@ function Library:AddConfigTab()
     local saveSection = tab:AddSection("Save Configuration", "left")
     
     local nameBox = Instance.new("Frame")
-    nameBox.Size = UDim2.new(1, 0, 0, 50)
+    nameBox.Size = UDim2.new(1, 0, 0, 54)
     nameBox.BackgroundColor3 = BG3
     nameBox.BorderSizePixel = 0
     nameBox.Parent = saveSection.Container
@@ -1283,19 +1305,19 @@ function Library:AddConfigTab()
     Util:AddCorner(nameBox, 5)
     
     local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, -20, 0, 18)
-    nameLabel.Position = UDim2.new(0, 10, 0, 4)
+    nameLabel.Size = UDim2.new(1, -20, 0, 20)
+    nameLabel.Position = UDim2.new(0, 12, 0, 5)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Text = "Config Name"
     nameLabel.TextColor3 = TEXT_DIM
-    nameLabel.TextSize = 10
+    nameLabel.TextSize = 11
     nameLabel.Font = Enum.Font.Gotham
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
     nameLabel.Parent = nameBox
     
     local nameInput = Instance.new("TextBox")
-    nameInput.Size = UDim2.new(1, -20, 0, 24)
-    nameInput.Position = UDim2.new(0, 10, 0, 22)
+    nameInput.Size = UDim2.new(1, -24, 0, 26)
+    nameInput.Position = UDim2.new(0, 12, 0, 24)
     nameInput.BackgroundColor3 = BG1
     nameInput.BorderSizePixel = 0
     nameInput.Text = ""
@@ -1316,17 +1338,17 @@ function Library:AddConfigTab()
     end)
     
     local saveBtn = Instance.new("TextButton")
-    saveBtn.Size = UDim2.new(1, 0, 0, 32)
+    saveBtn.Size = UDim2.new(1, 0, 0, 36)
     saveBtn.BackgroundColor3 = ACCENT
     saveBtn.BorderSizePixel = 0
     saveBtn.Text = "Save Config"
     saveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    saveBtn.TextSize = 12
+    saveBtn.TextSize = 13
     saveBtn.Font = Enum.Font.GothamBold
     saveBtn.AutoButtonColor = false
     saveBtn.Parent = saveSection.Container
     
-    Util:AddCorner(saveBtn, 5)
+    Util:AddCorner(saveBtn, 6)
     
     saveBtn.MouseButton1Click:Connect(function()
         if configName ~= "" then
@@ -1339,17 +1361,17 @@ function Library:AddConfigTab()
     local loadSection = tab:AddSection("Load Configuration", "right")
     
     local loadBtn = Instance.new("TextButton")
-    loadBtn.Size = UDim2.new(1, 0, 0, 32)
+    loadBtn.Size = UDim2.new(1, 0, 0, 36)
     loadBtn.BackgroundColor3 = ACCENT
     loadBtn.BorderSizePixel = 0
     loadBtn.Text = "Load Config"
     loadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    loadBtn.TextSize = 12
+    loadBtn.TextSize = 13
     loadBtn.Font = Enum.Font.GothamBold
     loadBtn.AutoButtonColor = false
     loadBtn.Parent = loadSection.Container
     
-    Util:AddCorner(loadBtn, 5)
+    Util:AddCorner(loadBtn, 6)
     
     loadBtn.MouseButton1Click:Connect(function()
         if configName ~= "" then
