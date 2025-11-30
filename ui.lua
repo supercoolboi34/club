@@ -3,12 +3,16 @@ print"its working"
 local Library = {}
 Library.__index = Library
 
+print"its working local"
+
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
+
+print"its working services"
 
 local ACCENT = Color3.fromRGB(120, 120, 255)
 local BG1 = Color3.fromRGB(15, 15, 15)
@@ -17,6 +21,8 @@ local BG3 = Color3.fromRGB(25, 25, 25)
 local TEXT = Color3.fromRGB(240, 240, 240)
 local TEXT_DIM = Color3.fromRGB(160, 160, 160)
 local BORDER = Color3.fromRGB(40, 40, 40)
+
+print"theme colors"
 
 local Util = {}
 
