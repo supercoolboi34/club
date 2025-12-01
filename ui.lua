@@ -164,6 +164,10 @@ end;
 function Library:MakeDraggable(Instance, Cutoff)
     Instance.Active = true;
 
+    local Dragging = false;
+    local DragStart = nil;
+    local StartPos = nil;
+
     Instance.InputBegan:Connect(function(Input)
         if Input.UserInputType == Enum.UserInputType.MouseButton1 then
             local ObjPos = Vector2.new(
@@ -175,18 +179,31 @@ function Library:MakeDraggable(Instance, Cutoff)
                 return;
             end;
 
-            while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                Instance.Position = UDim2.new(
-                    0,
-                    Mouse.X - ObjPos.X + (Instance.Size.X.Offset * Instance.AnchorPoint.X),
-                    0,
-                    Mouse.Y - ObjPos.Y + (Instance.Size.Y.Offset * Instance.AnchorPoint.Y)
-                );
+            Dragging = true;
+            DragStart = Input.Position;
+            StartPos = Instance.Position;
 
-                RenderStepped:Wait();
+            Input.Changed:Connect(function()
+                if Input.UserInputState == Enum.UserInputState.End then
+                    Dragging = false;
+                end;
+            end);
+        end;
+    end);
+
+    Instance.InputChanged:Connect(function(Input)
+        if Input.UserInputType == Enum.UserInputType.MouseMovement then
+            if Dragging then
+                local Delta = Input.Position - DragStart;
+                Instance.Position = UDim2.new(
+                    StartPos.X.Scale,
+                    StartPos.X.Offset + Delta.X,
+                    StartPos.Y.Scale,
+                    StartPos.Y.Offset + Delta.Y
+                );
             end;
         end;
-    end)
+    end);
 end;
 
 function Library:MakeResizable(Instance, MinSize)
@@ -398,6 +415,12 @@ function Library:RemoveFromRegistry(Instance)
 
         Library.RegistryMap[Instance] = nil;
     end;
+end;
+
+function Library:SetAccentColor(Color)
+    Library.AccentColor = Color;
+    Library.AccentColorDark = Library:GetDarkerColor(Color);
+    Library:UpdateColorsUsingRegistry();
 end;
 
 function Library:UpdateColorsUsingRegistry()
@@ -1923,8 +1946,16 @@ do
         end
 
         function Toggle:Display()
-            ToggleInner.BackgroundColor3 = Toggle.Value and Library.AccentColor or Library.MainColor;
-            ToggleInner.BorderColor3 = Toggle.Value and Library.AccentColorDark or Library.OutlineColor;
+            local TargetColor = Toggle.Value and Library.AccentColor or Library.MainColor;
+            local TargetBorder = Toggle.Value and Library.AccentColorDark or Library.OutlineColor;
+
+            TweenService:Create(ToggleInner, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundColor3 = TargetColor
+            }):Play();
+
+            TweenService:Create(ToggleInner, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BorderColor3 = TargetBorder
+            }):Play();
 
             Library.RegistryMap[ToggleInner].Properties.BackgroundColor3 = Toggle.Value and 'AccentColor' or 'MainColor';
             Library.RegistryMap[ToggleInner].Properties.BorderColor3 = Toggle.Value and 'AccentColorDark' or 'OutlineColor';
@@ -2354,6 +2385,42 @@ do
             SortOrder = Enum.SortOrder.LayoutOrder;
             Parent = Scrolling;
         });
+
+        local SearchBox = nil;
+        if Info.Multi or (#Dropdown.Values > 10) then
+            local SearchOuter = Library:Create('Frame', {
+                BackgroundColor3 = Library.MainColor;
+                BorderColor3 = Library.OutlineColor;
+                Size = UDim2.new(1, -1, 0, 20);
+                ZIndex = 23;
+                LayoutOrder = -1;
+                Parent = Scrolling;
+            });
+
+            Library:AddToRegistry(SearchOuter, {
+                BackgroundColor3 = 'MainColor';
+                BorderColor3 = 'OutlineColor';
+            });
+
+            SearchBox = Library:Create('TextBox', {
+                BackgroundTransparency = 1;
+                Position = UDim2.new(0, 5, 0, 0);
+                Size = UDim2.new(1, -10, 1, 0);
+                Font = Library.Font;
+                PlaceholderColor3 = Color3.fromRGB(190, 190, 190);
+                PlaceholderText = 'Search...';
+                Text = '';
+                TextColor3 = Library.FontColor;
+                TextSize = 13;
+                TextStrokeTransparency = 0;
+                TextXAlignment = Enum.TextXAlignment.Left;
+                ZIndex = 24;
+                Parent = SearchOuter;
+            });
+
+            Library:ApplyTextStroke(SearchBox);
+            Library:AddToRegistry(SearchBox, { TextColor3 = 'FontColor' });
+        end
 
         function Dropdown:Display()
             local Values = Dropdown.Values;
@@ -3057,6 +3124,33 @@ function Library:CreateWindow(...)
         Parent = ScreenGui;
     });
 
+    local GlowEffect = Library:Create('UIStroke', {
+        Color = Library.AccentColor;
+        Thickness = 2;
+        Transparency = 0.5;
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+        Parent = Outer;
+    });
+
+    Library:AddToRegistry(GlowEffect, {
+        Color = 'AccentColor';
+    });
+
+    task.spawn(function()
+        while Outer and Outer.Parent do
+            for i = 0.3, 0.7, 0.05 do
+                if not Outer or not Outer.Parent then break end
+                GlowEffect.Transparency = i;
+                task.wait(0.05);
+            end
+            for i = 0.7, 0.3, -0.05 do
+                if not Outer or not Outer.Parent then break end
+                GlowEffect.Transparency = i;
+                task.wait(0.05);
+            end
+        end
+    end);
+
     Library:MakeDraggable(Outer, 25);
     Library:MakeResizable(Outer, Vector2.new(400, 300));
 
@@ -3083,6 +3177,37 @@ function Library:CreateWindow(...)
         ZIndex = 1;
         Parent = Inner;
     });
+
+    local TitleGradient = Library:Create('UIGradient', {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Library.AccentColor),
+            ColorSequenceKeypoint.new(0.5, Library.FontColor),
+            ColorSequenceKeypoint.new(1, Library.AccentColor)
+        });
+        Offset = Vector2.new(-1, 0);
+        Rotation = 0;
+        Parent = WindowLabel;
+    });
+
+    Library:AddToRegistry(TitleGradient, {
+        Color = function()
+            return ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Library.AccentColor),
+                ColorSequenceKeypoint.new(0.5, Library.FontColor),
+                ColorSequenceKeypoint.new(1, Library.AccentColor)
+            });
+        end
+    });
+
+    task.spawn(function()
+        while WindowLabel and WindowLabel.Parent do
+            for i = 0, 1, 0.01 do
+                if not WindowLabel or not WindowLabel.Parent then break end
+                TitleGradient.Offset = Vector2.new(-1 + (i * 2), 0);
+                task.wait(0.03);
+            end
+        end
+    end);
 
     local MainSectionOuter = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor;
