@@ -1,3 +1,15 @@
+--[[ 
+
+Linoria Modified 
+Keybind Toggles [ Hold, Always, Toggle] with indicator.
+Fixed lag Dragging from the original
+Accent colouring
+better multi combo
+smoother toggles
+Resizing
+
+--]]
+
 local InputService = game:GetService('UserInputService');
 local TextService = game:GetService('TextService');
 local CoreGui = game:GetService('CoreGui');
