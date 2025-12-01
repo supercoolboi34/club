@@ -1103,7 +1103,8 @@ do
         });
 
         local DisplayLabel = Library:CreateLabel({
-            Size = UDim2.new(1, 0, 1, 0);
+            Size = UDim2.new(1, -90, 1, 0);
+            Position = UDim2.new(0, 85, 0, 0);
             TextSize = 13;
             Text = Info.Default;
             TextWrapped = true;
@@ -1111,13 +1112,13 @@ do
             Parent = PickInner;
         });
 
-        -- Mode indicator label (Always/Toggle/Hold)
         local ModeLabel = Library:CreateLabel({
-            Position = UDim2.new(1, 4, 0, 0);
-            Size = UDim2.new(0, 40, 1, 0);
-            TextSize = 11;
-            Text = '[' .. KeyPicker.Mode:sub(1, 1) .. ']';
+            Position = UDim2.new(0, -75, 0, 0);
+            Size = UDim2.new(0, 70, 1, 0);
+            TextSize = 10;
+            Text = KeyPicker.Mode:upper();
             TextColor3 = Library.AccentColor;
+            TextXAlignment = Enum.TextXAlignment.Right;
             ZIndex = 8;
             Parent = PickOuter;
         });
@@ -1196,7 +1197,7 @@ do
 
             local State = KeyPicker:GetState();
 
-            ContainerLabel.Text = string.format('[%s] %s [%s]', KeyPicker.Value, Info.Text, KeyPicker.Mode:sub(1, 1));
+            ContainerLabel.Text = string.format('[%s] %s [%s]', KeyPicker.Value, Info.Text, KeyPicker.Mode:upper());
 
             ContainerLabel.Visible = true;
             ContainerLabel.TextColor3 = State and Library.AccentColor or Library.FontColor;
@@ -1239,7 +1240,7 @@ do
                 end;
 
                 KeyPicker.Mode = Mode;
-                ModeLabel.Text = '[' .. Mode:sub(1, 1) .. ']';
+                ModeLabel.Text = Mode:upper();
 
                 Label.TextColor3 = Library.AccentColor;
                 Library.RegistryMap[Label].Properties.TextColor3 = 'AccentColor';
@@ -3136,29 +3137,49 @@ function Library:CreateWindow(...)
         Parent = ScreenGui;
     });
 
-    local GlowEffect = Library:Create('UIStroke', {
-        Color = Library.AccentColor;
-        Thickness = 2;
-        Transparency = 0.5;
-        ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+    Library:Create('UICorner', {
+        CornerRadius = UDim.new(0, 6);
         Parent = Outer;
     });
 
-    Library:AddToRegistry(GlowEffect, {
-        Color = 'AccentColor';
+    local GlowContainer = Library:Create('Frame', {
+        BackgroundTransparency = 1;
+        Position = UDim2.new(0, -30, 0, -30);
+        Size = UDim2.new(1, 60, 1, 60);
+        ZIndex = 0;
+        Parent = Outer;
     });
 
+    local Glow = Library:Create('ImageLabel', {
+        BackgroundTransparency = 1;
+        Image = 'rbxassetid://5028857472';
+        ImageColor3 = Library.AccentColor;
+        ImageTransparency = 0.3;
+        ScaleType = Enum.ScaleType.Slice;
+        SliceCenter = Rect.new(24, 24, 276, 276);
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 0;
+        Parent = GlowContainer;
+    });
+
+    Library:AddToRegistry(Glow, {
+        ImageColor3 = 'AccentColor';
+    });
+
+    Library.WindowGlow = Glow;
+    Library.GlowEnabled = true;
+
     task.spawn(function()
-        while Outer and Outer.Parent do
-            for i = 0.3, 0.7, 0.05 do
-                if not Outer or not Outer.Parent then break end
-                GlowEffect.Transparency = i;
-                task.wait(0.05);
+        while Outer and Outer.Parent and Library.GlowEnabled do
+            for i = 0.2, 0.6, 0.02 do
+                if not Outer or not Outer.Parent or not Library.GlowEnabled then break end
+                Glow.ImageTransparency = i;
+                task.wait(0.04);
             end
-            for i = 0.7, 0.3, -0.05 do
-                if not Outer or not Outer.Parent then break end
-                GlowEffect.Transparency = i;
-                task.wait(0.05);
+            for i = 0.6, 0.2, -0.02 do
+                if not Outer or not Outer.Parent or not Library.GlowEnabled then break end
+                Glow.ImageTransparency = i;
+                task.wait(0.04);
             end
         end
     end);
@@ -3174,6 +3195,11 @@ function Library:CreateWindow(...)
         Size = UDim2.new(1, -2, 1, -2);
         ZIndex = 1;
         Parent = Outer;
+    });
+
+    Library:Create('UICorner', {
+        CornerRadius = UDim.new(0, 5);
+        Parent = Inner;
     });
 
     Library:AddToRegistry(Inner, {
@@ -3196,7 +3222,7 @@ function Library:CreateWindow(...)
             ColorSequenceKeypoint.new(0.5, Library.FontColor),
             ColorSequenceKeypoint.new(1, Library.AccentColor)
         });
-        Offset = Vector2.new(-1, 0);
+        Offset = Vector2.new(0, 0);
         Rotation = 0;
         Parent = WindowLabel;
     });
@@ -3211,13 +3237,15 @@ function Library:CreateWindow(...)
         end
     });
 
+    Library.TitleGradient = TitleGradient;
+    Library.TitleAnimationEnabled = true;
+
     task.spawn(function()
-        while WindowLabel and WindowLabel.Parent do
-            for i = 0, 1, 0.01 do
-                if not WindowLabel or not WindowLabel.Parent then break end
-                TitleGradient.Offset = Vector2.new(-1 + (i * 2), 0);
-                task.wait(0.03);
-            end
+        local offset = 0;
+        while WindowLabel and WindowLabel.Parent and Library.TitleAnimationEnabled do
+            offset = (offset + 0.01) % 2;
+            TitleGradient.Offset = Vector2.new(-1 + offset, 0);
+            task.wait(0.03);
         end
     end);
 
